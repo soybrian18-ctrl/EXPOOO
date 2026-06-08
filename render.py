@@ -126,3 +126,10 @@ def run_cli(main: Callable[[], Optional[int]]) -> int:
     except MonitorError as exc:  # any other deliberate error
         _panel(str(exc), title="Error")
         return 1
+    except Exception as exc:  # final safety net: never surface a raw traceback
+        _panel(
+            f"Unexpected error: {type(exc).__name__}: {exc}\n\n"
+            "If this looks auth-related, re-run 'python setup_auth.py'.",
+            title="Unexpected error",
+        )
+        return 1

@@ -19,16 +19,22 @@ Design notes
 
 from __future__ import annotations
 
+import contextlib
 import os
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Iterator, Optional
 
 import httpx
 from dotenv import load_dotenv
 from schwab.auth import client_from_token_file
 from schwab.client import Client
+
+try:  # POSIX advisory locking; absent on Windows (lock simply becomes a no-op).
+    import fcntl
+except ImportError:  # pragma: no cover - platform dependent
+    fcntl = None  # type: ignore[assignment]
 
 # Schwab limits the order-history query window to ~60 days of entered time.
 # GTC stops entered earlier than this will not be returned by the endpoint.
@@ -185,17 +191,28 @@ def build_client(settings: Settings) -> Client:
             f"No Schwab token found at {token_path}.\n"
             "Run 'python setup_auth.py' once to complete the browser login flow."
         )
+
+    # schwab-py rewrites the token file on every automatic access-token refresh
+    # using the process umask. Tighten the umask first so those rewrites stay
+    # owner-only, then re-assert 0600 on the existing file as belt-and-braces.
+    os.umask(0o077)
     try:
-        return client_from_token_file(
+        client = client_from_token_file(
             str(token_path),
             api_key=settings.api_key,
             app_secret=settings.app_secret,
         )
-    except (ValueError, KeyError) as exc:  # corrupt / incompatible token file
+    except (OSError, ValueError, KeyError) as exc:
+        # OSError covers a token deleted between the is_file() check and now,
+        # or one we cannot read; ValueError covers corrupt JSON.
         raise AuthError(
-            f"Token file at {token_path} could not be read ({exc}). "
-            "Delete it and re-run 'python setup_auth.py'."
+            f"Token file at {token_path} could not be read or is missing ({exc}). "
+            "Re-run 'python setup_auth.py' to re-authenticate."
         ) from exc
+
+    with contextlib.suppress(OSError):
+        os.chmod(token_path, 0o600)
+    return client
 
 
 # ---------------------------------------------------------------------------
@@ -218,6 +235,14 @@ def unwrap(resp: httpx.Response, *, context: str) -> Any:
                 f"{context}: Schwab returned a non-JSON body.",
             ) from exc
 
+    if resp.status_code == 400:
+        # Do not echo the body: a 400 on an auth/token request can contain the
+        # submitted parameters. Keep the message generic.
+        raise ApiError(
+            400,
+            f"{context}: Bad request (400). Check the request parameters and that "
+            "your app configuration (callback URL, scopes) is correct.",
+        )
     if resp.status_code == 401:
         raise ApiError(
             401,
@@ -307,7 +332,14 @@ def fetch_securities_account(client: Client, account_hash: str) -> dict[str, Any
     """Return the ``securitiesAccount`` block, including positions and balances."""
     resp = client.get_account(account_hash, fields=Client.Account.Fields.POSITIONS)
     data = unwrap(resp, context="Fetching account positions/balances")
-    return data.get("securitiesAccount", data)
+    # Fail loudly on an unexpected shape rather than silently rendering an empty
+    # account (which would otherwise look like a flat, exit-0 "nothing here").
+    if not isinstance(data, dict) or "securitiesAccount" not in data:
+        raise ApiError(200, "Unexpected account payload: missing 'securitiesAccount'.")
+    account = data["securitiesAccount"]
+    if not isinstance(account, dict):
+        raise ApiError(200, "Unexpected account payload: 'securitiesAccount' is not an object.")
+    return account
 
 
 def fetch_working_orders(
@@ -326,3 +358,39 @@ def fetch_working_orders(
     )
     data = unwrap(resp, context="Fetching working orders")
     return data if isinstance(data, list) else []
+
+
+# ---------------------------------------------------------------------------
+# Concurrency guard
+# ---------------------------------------------------------------------------
+
+
+@contextlib.contextmanager
+def instance_lock(token_path: str) -> Iterator[Optional[bool]]:
+    """Best-effort advisory lock so concurrent runs don't race the token file.
+
+    schwab-py writes the token non-atomically with no lock of its own, so two
+    processes refreshing at the same moment could corrupt it. This serialises
+    access via ``flock`` on a sidecar ``<token>.lock``.
+
+    Yields ``True`` if the lock was acquired, ``False`` if another instance
+    holds it (the caller may warn and proceed), or ``None`` when locking is
+    unavailable (non-POSIX platforms).
+    """
+    if fcntl is None:
+        yield None
+        return
+    lock_path = str(Path(token_path).expanduser()) + ".lock"
+    fd = os.open(lock_path, os.O_CREAT | os.O_RDWR, 0o600)
+    try:
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError:
+            yield False
+            return
+        try:
+            yield True
+        finally:
+            fcntl.flock(fd, fcntl.LOCK_UN)
+    finally:
+        os.close(fd)

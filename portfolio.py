@@ -27,6 +27,7 @@ from config import (
     build_client,
     fetch_securities_account,
     fetch_working_orders,
+    instance_lock,
     load_settings,
     resolve_account,
 )
@@ -136,11 +137,16 @@ def _orders_table(rows: list[analysis.OrderRow]) -> Table:
 
 def main() -> int:
     settings = load_settings()
-    client = build_client(settings)
-    account = resolve_account(client, settings)
-
-    securities_account = fetch_securities_account(client, account.account_hash)
-    raw_orders = fetch_working_orders(client, account.account_hash)
+    with instance_lock(settings.token_path) as locked:
+        if locked is False:
+            console.print(
+                "[yellow]Another monitor instance holds the token lock; "
+                "proceeding without it.[/]"
+            )
+        client = build_client(settings)
+        account = resolve_account(client, settings)
+        securities_account = fetch_securities_account(client, account.account_hash)
+        raw_orders = fetch_working_orders(client, account.account_hash)
 
     rows = analysis.position_rows(securities_account.get("positions", []))
     summary = analysis.account_summary(securities_account)

@@ -50,6 +50,22 @@ DEFAULT_TOKEN_PATH = "./schwab_token.json"
 # ---------------------------------------------------------------------------
 
 
+def _env_quote(value: str) -> str:
+    """Double-quote and escape a value so special characters can't corrupt .env.
+
+    Secrets may contain ``=``, ``#``, spaces or quotes; double-quoting with
+    backslash escapes round-trips cleanly through python-dotenv's parser and
+    prevents a value from bleeding into adjacent keys.
+    """
+    escaped = (
+        value.replace("\\", "\\\\")
+        .replace('"', '\\"')
+        .replace("\r", "")
+        .replace("\n", "\\n")
+    )
+    return f'"{escaped}"'
+
+
 def _persist_env(path: str, updates: dict[str, str]) -> None:
     """Merge ``updates`` into ``.env`` and lock the file to 0600."""
     p = Path(path)
@@ -60,13 +76,13 @@ def _persist_env(path: str, updates: dict[str, str]) -> None:
         match = re.match(r"\s*([A-Z0-9_]+)\s*=", line)
         if match and match.group(1) in updates:
             key = match.group(1)
-            out.append(f"{key}={updates[key]}")
+            out.append(f"{key}={_env_quote(updates[key])}")
             seen.add(key)
         else:
             out.append(line)
     for key, value in updates.items():
         if key not in seen:
-            out.append(f"{key}={value}")
+            out.append(f"{key}={_env_quote(value)}")
 
     # Create/truncate with owner-only permissions from the start.
     fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)

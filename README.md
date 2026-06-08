@@ -103,12 +103,18 @@ so it slots cleanly into cron/alerting.
 ## Security model
 
 - Credentials only in `.env` (git-ignored); the token file is git-ignored and
-  `chmod 600`.
+  `chmod 600`. Because `schwab-py` rewrites the token on every refresh, the
+  scripts set a `0o077` umask and re-assert `600` so refreshed tokens never
+  become world-readable. When `setup_auth.py` writes `.env`, values are quoted
+  and escaped so a secret containing special characters can't corrupt the file.
 - Schwab requires the **hashed** account number on every request. `schwab-py`
   resolves it via `get_account_numbers`; this project never bypasses that and
   never prints the raw number or full hash (account numbers are masked to the
   last four digits).
 - `schwab-py` automatically redacts secrets from its own logs.
+- Concurrent runs (e.g. a cron `stop_check.py` overlapping `portfolio.py`) take
+  an advisory `flock` on `<token>.lock` so they don't race `schwab-py`'s
+  non-atomic token rewrite. On non-POSIX platforms the lock is a no-op.
 
 ## Notes & limitations
 
