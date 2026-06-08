@@ -1,0 +1,9 @@
+# Runtime dependencies for the Schwab account monitor.
+# Install with:  pip install -r requirements.txt
+#
+# All Schwab API access goes through schwab-py (https://github.com/alexgolec/schwab-py).
+# No raw HTTP requests are made anywhere in this project.
+
+schwab-py>=1.5.0,<2
+rich>=13.0.0
+python-dotenv>=1.0.0

@@ -1,0 +1,35 @@
+# ---------------------------------------------------------------------------
+# Secrets & credentials  --  NEVER commit these
+# ---------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+
+# Schwab OAuth token store (contains live access + refresh tokens)
+schwab_token.json
+*token*.json
+!package.json
+!package-lock.json
+
+# ---------------------------------------------------------------------------
+# Python
+# ---------------------------------------------------------------------------
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+build/
+dist/
+
+# ---------------------------------------------------------------------------
+# Editors / OS
+# ---------------------------------------------------------------------------
+.idea/
+.vscode/
+.DS_Store
