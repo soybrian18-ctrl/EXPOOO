@@ -36,3 +36,7 @@ dist/
 .idea/
 .vscode/
 .DS_Store
+
+# Transient OAuth setup artifacts
+.auth_context.json
+.redirect_url.txt
