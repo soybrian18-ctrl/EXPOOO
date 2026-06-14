@@ -77,6 +77,47 @@ def tif_text(tif: Optional[str], *, is_day: bool) -> Text:
 
 
 # ---------------------------------------------------------------------------
+# Oversized "marquee" digits (a poor-man's figlet for headline numbers)
+# ---------------------------------------------------------------------------
+
+# Each glyph is exactly 5 rows tall and 5 columns wide so they line up when
+# concatenated. Only the characters that appear in a formatted dollar amount are
+# defined; anything unknown falls back to blank.
+_BIG_FONT: dict[str, list[str]] = {
+    "0": ["█████", "█   █", "█   █", "█   █", "█████"],
+    "1": ["  ██ ", " █ █ ", "   █ ", "   █ ", " ████"],
+    "2": ["█████", "    █", "█████", "█    ", "█████"],
+    "3": ["█████", "    █", " ████", "    █", "█████"],
+    "4": ["█   █", "█   █", "█████", "    █", "    █"],
+    "5": ["█████", "█    ", "█████", "    █", "█████"],
+    "6": ["█████", "█    ", "█████", "█   █", "█████"],
+    "7": ["█████", "    █", "   █ ", "  █  ", "  █  "],
+    "8": ["█████", "█   █", "█████", "█   █", "█████"],
+    "9": ["█████", "█   █", "█████", "    █", "█████"],
+    "$": ["  █  ", " ████", "█ █  ", "  █ █", " ███ "],
+    ",": ["     ", "     ", "     ", "  ██ ", "  █  "],
+    ".": ["     ", "     ", "     ", "     ", "  ██ "],
+    "-": ["     ", "     ", "█████", "     ", "     "],
+    "+": ["     ", "  █  ", "█████", "  █  ", "     "],
+    " ": ["     ", "     ", "     ", "     ", "     "],
+}
+
+
+def big_text(value: str, *, style: str = "bold") -> Text:
+    """Render ``value`` (digits, ``$ , . + -``) as 5-row block characters.
+
+    Used for headline figures like net liquidating value so they read as
+    "large text" in a terminal that cannot scale fonts.
+    """
+    lines = ["", "", "", "", ""]
+    for ch in value:
+        glyph = _BIG_FONT.get(ch, _BIG_FONT[" "])
+        for i in range(5):
+            lines[i] += glyph[i] + " "
+    return Text("\n".join(lines), style=style)
+
+
+# ---------------------------------------------------------------------------
 # CLI error handling
 # ---------------------------------------------------------------------------
 

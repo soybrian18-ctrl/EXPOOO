@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
-"""stop_check.py -- protective-stop health check for a Schwab account.
+"""stop_check.py -- a visually rich protective-stop health check.
 
 Run directly:
 
     python stop_check.py
 
-For every open position and its working stop order it:
-  * flags any stop where the current mark is within 5% of the stop price, and
-  * flags any stop whose time-in-force is DAY instead of GTC.
-If nothing is flagged it prints a clean all-clear message.
+Renders, like a small trading terminal:
+  * a header panel with the check timestamp and account;
+  * a "Positions at Risk" table listing every open position with its current
+    price, stop price, and percentage distance to the stop;
+  * a bright-green ALL CLEAR banner when nothing is wrong, or one red warning
+    panel per issue: a position within 5% of (or through) its stop, or a stop
+    order whose time-in-force is DAY instead of GTC.
 
 Exit codes: 0 = all clear, 3 = one or more flags triggered (handy for cron /
 alerting), 1/2 = API or configuration errors.
@@ -19,8 +22,10 @@ All Schwab access is via schwab-py; the token is refreshed automatically.
 from __future__ import annotations
 
 import sys
+from datetime import datetime
 
 from rich import box
+from rich.align import Align
 from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
@@ -39,23 +44,46 @@ from render import console, fmt_money, fmt_pct, run_cli, tif_text
 FLAGS_EXIT_CODE = 3
 
 
-def _alert_text(ev: analysis.StopEvaluation, threshold_pct: float) -> Text:
-    parts: list[str] = []
-    if ev.near_flag:
-        if ev.proximity_pct is not None and ev.proximity_pct < 0:
-            parts.append("STOP BREACHED")
-        else:
-            parts.append(f"WITHIN {threshold_pct:g}%")
-    if ev.day_flag:
-        parts.append("DAY TIF")
-    if not parts:
-        return Text("clear", style="green")
-    return Text("⚠ " + " + ".join(parts), style="bold white on red")
+def _header(account_display: str, threshold_pct: float) -> Panel:
+    now = datetime.now().astimezone()
+    grid = Table.grid(padding=(0, 2))
+    grid.add_column(style="dim", justify="left")
+    grid.add_column(justify="left")
+    grid.add_row("Account", Text(account_display, style="bold white"))
+    grid.add_row(
+        "Check time",
+        Text(now.strftime("%A, %b %d, %Y  %I:%M:%S %p %Z").lstrip("0"), style="white"),
+    )
+    grid.add_row("Proximity threshold", Text(f"{threshold_pct:g}%", style="white"))
+    return Panel(
+        grid,
+        title=Text("🛡  STOP-LOSS HEALTH CHECK", style="bold cyan"),
+        border_style="cyan",
+        box=box.DOUBLE,
+        expand=False,
+    )
 
 
-def _stops_table(report: analysis.StopReport) -> Table:
+def _nearest_stops(report: analysis.StopReport) -> dict[str, analysis.StopEvaluation]:
+    """Map each symbol that has a position to its most-at-risk stop evaluation."""
+    out: dict[str, analysis.StopEvaluation] = {}
+    for ev in report.evaluations:
+        if not ev.has_position:
+            continue
+        cur = out.get(ev.symbol)
+        if cur is None or (
+            ev.proximity_pct is not None
+            and (cur.proximity_pct is None or ev.proximity_pct < cur.proximity_pct)
+        ):
+            out[ev.symbol] = ev
+    return out
+
+
+def _at_risk_table(
+    rows: list[analysis.PositionRow], report: analysis.StopReport
+) -> Table:
     table = Table(
-        title="Working Stop Orders",
+        title="Positions at Risk",
         title_style="bold",
         box=box.SIMPLE_HEAVY,
         header_style="bold cyan",
@@ -63,88 +91,114 @@ def _stops_table(report: analysis.StopReport) -> Table:
     )
     table.add_column("Symbol", style="bold")
     table.add_column("Side")
-    table.add_column("Mark", justify="right")
+    table.add_column("Current", justify="right")
     table.add_column("Stop", justify="right")
-    table.add_column("To Stop", justify="right")
+    table.add_column("Distance", justify="right")
     table.add_column("TIF", justify="center")
-    table.add_column("Alert")
+    table.add_column("Status")
 
-    if not report.evaluations:
-        table.add_row("—", "—", "—", "—", "—", "—", Text("no stops found", style="yellow"))
+    if not rows:
+        table.add_row("—", "—", "—", "—", "—", "—", Text("no open positions", style="yellow"))
         return table
 
-    for ev in sorted(report.evaluations, key=lambda e: e.symbol):
-        side = "—" if not ev.has_position else ("SHORT" if ev.is_short else "LONG")
-        mark = fmt_money(ev.mark) if ev.mark is not None else "n/a"
-        to_stop = fmt_pct(ev.proximity_pct) if ev.proximity_pct is not None else "n/a"
-        to_stop_style = "red" if ev.near_flag else "white"
+    stops = _nearest_stops(report)
+    for r in sorted(rows, key=lambda x: x.symbol):
+        side = "SHORT" if r.is_short else "LONG"
+        current = fmt_money(r.mark)
+        ev = stops.get(r.symbol)
+
+        if ev is None:
+            stop_cell = Text("— none —", style="yellow")
+            dist_cell = Text("no stop", style="yellow")
+            tif_cell = Text("—", style="dim")
+            status = Text("⚠ UNPROTECTED", style="bold yellow")
+            row_style = "yellow"
+        else:
+            stop_cell = Text(fmt_money(ev.stop_price))
+            if ev.proximity_pct is None:
+                dist_cell = Text("n/a", style="dim")
+            else:
+                dist_cell = Text(
+                    fmt_pct(ev.proximity_pct),
+                    style="bold red" if ev.near_flag else "green",
+                )
+            tif_cell = tif_text(ev.tif, is_day=ev.day_flag)
+            breached = ev.proximity_pct is not None and ev.proximity_pct < 0
+            if breached:
+                status = Text("⚠ STOP BREACHED", style="bold white on red")
+                row_style = "red"
+            elif ev.near_flag:
+                status = Text("⚠ AT RISK", style="bold white on red")
+                row_style = "red"
+            elif ev.day_flag:
+                status = Text("⚠ DAY TIF", style="bold white on red")
+                row_style = "red"
+            else:
+                status = Text("✓ OK", style="green")
+                row_style = "green"
+
         table.add_row(
-            ev.symbol,
-            side,
-            mark,
-            fmt_money(ev.stop_price),
-            Text(to_stop, style=to_stop_style),
-            tif_text(ev.tif, is_day=ev.day_flag),
-            _alert_text(ev, report.threshold_pct),
+            r.symbol, side, current, stop_cell, dist_cell, tif_cell, status, style=row_style
         )
     return table
 
 
-def _render_summary(report: analysis.StopReport) -> None:
-    red = report.red_flags
-    if red:
-        lines = Text()
-        for ev in red:
-            reasons = []
-            if ev.near_flag:
-                if ev.proximity_pct is not None and ev.proximity_pct < 0:
-                    reasons.append("mark has breached the stop")
-                else:
-                    reasons.append(
-                        f"mark is {fmt_pct(ev.proximity_pct)} from the stop "
-                        f"(threshold {report.threshold_pct:g}%)"
-                    )
-            if ev.day_flag:
-                reasons.append("TIF is DAY, not GTC")
-            lines.append(f"  • {ev.symbol}: ", style="bold")
-            lines.append("; ".join(reasons) + "\n")
-        console.print(
+def _warning_panels(report: analysis.StopReport) -> list[Panel]:
+    """One red panel per issue: near/breached stop, or DAY-TIF stop order."""
+    panels: list[Panel] = []
+
+    for ev in sorted(
+        (e for e in report.evaluations if e.near_flag), key=lambda e: e.symbol
+    ):
+        breached = ev.proximity_pct is not None and ev.proximity_pct < 0
+        if breached:
+            title = f"⚠  STOP BREACHED — {ev.symbol}"
+            msg = (
+                f"Mark {fmt_money(ev.mark)} has moved THROUGH the stop at "
+                f"{fmt_money(ev.stop_price)} ({fmt_pct(ev.proximity_pct)}). "
+                "The protective stop should already have triggered — verify the fill."
+            )
+        else:
+            title = f"⚠  WITHIN {report.threshold_pct:g}% OF STOP — {ev.symbol}"
+            msg = (
+                f"Mark {fmt_money(ev.mark)} is only {fmt_pct(ev.proximity_pct)} from the "
+                f"stop at {fmt_money(ev.stop_price)} (threshold {report.threshold_pct:g}%). "
+                "A small adverse move will trigger it."
+            )
+        panels.append(
+            Panel(Text(msg, style="bold white"), title=title, border_style="red", expand=False)
+        )
+
+    for ev in sorted(
+        (e for e in report.evaluations if e.day_flag), key=lambda e: e.symbol
+    ):
+        order_ref = f" (#{ev.order_id})" if ev.order_id is not None else ""
+        msg = (
+            f"The stop order{order_ref} for {ev.symbol} uses DAY time-in-force. It will "
+            "expire at the close and leave the position unprotected overnight. "
+            "Convert it to GTC."
+        )
+        panels.append(
             Panel(
-                lines,
-                title=f"⚠  {len(red)} STOP WARNING(S)",
+                Text(msg, style="bold white"),
+                title=f"⚠  DAY TIF — SHOULD BE GTC — {ev.symbol}",
                 border_style="red",
                 expand=False,
             )
         )
-    else:
-        console.print(
-            Panel(
-                Text(
-                    "ALL CLEAR — no stop is within "
-                    f"{report.threshold_pct:g}% of the mark and every working "
-                    "stop is GTC.",
-                    style="bold green",
-                ),
-                title="✓  ALL CLEAR",
-                border_style="green",
-                expand=False,
-            )
-        )
 
-    if report.positions_without_stop:
-        console.print(
-            Panel(
-                Text(
-                    "No working stop order found for: "
-                    + ", ".join(report.positions_without_stop)
-                    + ".",
-                    style="yellow",
-                ),
-                title="Advisory — unprotected positions",
-                border_style="yellow",
-                expand=False,
-            )
-        )
+    return panels
+
+
+def _all_clear_banner(report: analysis.StopReport) -> Panel:
+    txt = Text()
+    txt.append("✓   ALL CLEAR   ✓\n", style="bold green")
+    txt.append(
+        f"No stop is within {report.threshold_pct:g}% of the mark, "
+        "and every working stop is GTC.",
+        style="green",
+    )
+    return Panel(Align.center(txt), border_style="green", box=box.DOUBLE, expand=False)
 
 
 def main() -> int:
@@ -160,25 +214,56 @@ def main() -> int:
         securities_account = fetch_securities_account(client, account.account_hash)
         raw_orders = fetch_working_orders(client, account.account_hash)
 
+    positions = securities_account.get("positions", [])
+    rows = analysis.position_rows(positions)
     report = analysis.analyze_stops(
-        securities_account.get("positions", []),
+        positions,
         raw_orders,
         threshold_pct=analysis.DEFAULT_STOP_PROXIMITY_PCT,
     )
 
     console.print()
-    console.print(
-        Panel(
-            Text(f"Stop check for account {account.display}", style="bold cyan"),
-            border_style="cyan",
-            expand=False,
+    console.print(_header(account.display, report.threshold_pct))
+    console.print()
+    console.print(_at_risk_table(rows, report))
+    console.print()
+
+    warnings = _warning_panels(report)
+    if warnings:
+        console.print(
+            Panel(
+                Text(
+                    f"{len(warnings)} issue(s) require attention — review below.",
+                    style="bold white",
+                ),
+                title="⚠  ACTION REQUIRED",
+                border_style="red",
+                expand=False,
+            )
         )
-    )
-    console.print()
-    console.print(_stops_table(report))
-    console.print()
-    _render_summary(report)
-    console.print()
+        console.print()
+        for panel in warnings:
+            console.print(panel)
+            console.print()
+    else:
+        console.print(_all_clear_banner(report))
+        console.print()
+
+    if report.positions_without_stop:
+        console.print(
+            Panel(
+                Text(
+                    "No working stop order found for: "
+                    + ", ".join(report.positions_without_stop)
+                    + ".",
+                    style="yellow",
+                ),
+                title="Advisory — unprotected positions",
+                border_style="yellow",
+                expand=False,
+            )
+        )
+        console.print()
 
     return FLAGS_EXIT_CODE if report.red_flags else 0
 
