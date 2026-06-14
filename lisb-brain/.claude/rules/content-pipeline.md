@@ -29,3 +29,18 @@ Hook score minimum 7. All four checks must pass: hook strength, watch time under
 - Per-slide audio clips. Never one continuous audio block.
 - ffmpeg for audio mixing.
 - NCS.io for background music by genre and mood per niche.
+
+## Viral Hook Framework
+When generating hook slides, apply this framework before finalizing:
+Find a hook structure that has already proven viral in any niche. Keep the proven structure. Swap the keywords to fit the specific niche and topic. A hook built on proven data outperforms an original untested hook every time.
+
+When generating hooks, first identify the hook structure type: loss frame, result frame, contrast frame, curiosity gap, or pattern interrupt. Then adapt that structure to the niche before writing the specific words.
+
+Hook examples by structure type:
+- Loss frame: A weak bio quietly costs your service business clients.
+- Result frame: Three completely different brands. One studio built all of them.
+- Contrast frame: Being the best at what you do means nothing if you look like you are starting out.
+- Curiosity gap: Your logo is not your brand. Here is the difference.
+- Pattern interrupt: Do this five second Instagram audit on your profile now.
+
+Always identify which structure type the hook uses before approving it for render.
