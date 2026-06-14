@@ -12,7 +12,24 @@ Pillar 2 is permanently removed.
 Brand reveals use 8 slides: Hook, 3 brand slides, closing, follow CTA slide, price CTA slide.
 
 ## Hook Rule
-Opens with a problem or a result. Never a question. Niche-specific. Under 10 words.
+Never opens with a question. Must stop the scroll in the first 3 seconds.
+
+Allowed hook structure types:
+- Loss frame: opens with what the viewer is losing or missing
+- Result frame: opens with a visible outcome or proof
+- Contrast frame: opens with a contradiction or unexpected comparison
+- Curiosity gap: opens with an incomplete statement that demands resolution
+- Pattern interrupt: opens with a direct command or unexpected declaration
+
+Word count guidance:
+- Loss, result, curiosity gap, pattern interrupt hooks: 10 words or fewer
+- Contrast hooks: up to 17 words allowed because the contradiction needs space to land
+
+Niche specificity:
+- Educational reels: hook must reference the specific niche or a pain they recognize
+- Brand reveal reels: hook can be studio-credibility focused since the visual carries the niche context
+
+Always identify the hook structure type before approving for render. The structure type determines whether the hook passes the gate.
 
 ## Posting Schedule ET
 - Tuesday 7 to 9 AM: Pillar 1 and Pillar 4
