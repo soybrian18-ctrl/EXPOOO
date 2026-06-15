@@ -32,3 +32,12 @@ Reference something specific and visible in that exact post only. Never use loca
 
 ## Soft Rejection Response
 Remove pressure, plant a future follow-up, and signal selectivity by noting we only take a few clients at a time to keep quality tight.
+
+## Profile Credibility Standards
+The follower to following ratio matters to prospects. A high following count relative to followers signals a new or struggling account.
+
+Target: following count must stay under 150 at all times. Unfollow any account that has not followed back after 30 days.
+
+Follower growth priority: accounts already in the warm-up sequence are the most likely to follow back. A second genuine comment on a recent post increases the chance they tap the profile and follow.
+
+Do not send a cold DM to any account while the following count is more than double the follower count. Fix the ratio first.
