@@ -24,3 +24,8 @@ Never automate Instagram send actions. No automated follows, likes, comments, DM
 - .claude/rules/outreach.md — load for lead sourcing, DM, or comment tasks
 - .claude/rules/content-pipeline.md — load for reel generation or scoring
 - .claude/rules/loops.md — load when building or running automated loops
+
+## Session Management
+End every session by writing SESSION_HANDOFF.md covering: completed, in progress, next action, decisions made.
+Start every session by reading SESSION_HANDOFF.md first.
+Work in small focused chunks. One job per session.
