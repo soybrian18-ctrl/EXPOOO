@@ -26,6 +26,6 @@ Never automate Instagram send actions. No automated follows, likes, comments, DM
 - .claude/rules/loops.md — load when building or running automated loops
 
 ## Session Management
-End every session by writing SESSION_HANDOFF.md covering: completed, in progress, next action, decisions made.
-Start every session by reading SESSION_HANDOFF.md first.
+End every session by writing SESSION_HANDOFF_{session_name}.md, where session_name describes this session's job (for example SESSION_HANDOFF_remotion.md, SESSION_HANDOFF_outreach.md, SESSION_HANDOFF_pipeline.md, SESSION_HANDOFF_unfollow.md). Cover: completed, in progress, next action, decisions made. Never write to a generic SESSION_HANDOFF.md.
+Start every session by reading the matching SESSION_HANDOFF_{session_name}.md first.
 Work in small focused chunks. One job per session.
