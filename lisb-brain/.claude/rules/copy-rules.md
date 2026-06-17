@@ -4,7 +4,8 @@
 Direct and conversational. Short sentences. No em dashes. Write the way a peer talks to a business owner, not the way a consultant writes a report. Headlines under 12 words.
 
 ## CTA Standards by Pillar
-- Pillar 1 and Pillar 3: Follow us for a new Long Island brand reveal every week.
+- Pillar 1: Follow us for a new Long Island brand reveal every week.
+- Pillar 3: Follow us for a new branding tip every week.
 - Pillar 4 and Pillar 5: DM us your niche and we will show you what your brand could look like.
 - Brand reveal CTA slide exact wording: Want this for your business? DM us to get started. $175 flat, delivered in 5 to 7 days.
 - Brand reveals add a follow slide before the price CTA: Follow us for next week's reveal.
