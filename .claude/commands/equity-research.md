@@ -7,13 +7,17 @@ approval gate at the end is NON-NEGOTIABLE.
 
 1. **Re-read `references/trading-rules.md` in full** and apply it (binding context).
 
-2. **Pre-flight token + live balance.** Run:
-   `.venv/bin/python loops/research_inputs.py`
-   - If `token_ok` is `false` or the JSON has an `error`: send a desktop notification
-     (`osascript -e 'display notification "Equity research aborted: token/API problem" with title "Equity Research"'`),
-     tell the chat session to re-run `setup_auth.py`, and **STOP**. Do not proceed.
-   - Otherwise capture `net_liq`, `cash`, `deployed_pct`, `headroom_to_70pct`,
-     `two_pct_risk_budget`, and the held tickers (`positions[].symbol`).
+2. **Pre-flight + live balance (Alpaca — the EXECUTION account).** Run:
+   `.venv/bin/python loops/alpaca_account.py`
+   - If the JSON has an `error`: send a desktop notification
+     (`osascript -e 'display notification "Equity research aborted: Alpaca connectivity problem" with title "Equity Research"'`)
+     and **STOP**. Do not proceed.
+   - Otherwise capture `equity`, `cash`, `deployed_pct`, `position_count`, and `held_symbols`.
+     **Sizing and the rule gates are computed against THIS Alpaca paper balance** (where the
+     order executes), not the Schwab monitor. Derive `two_pct_budget = 0.02*equity` and
+     `headroom_to_70pct = 0.70*equity − deployed_value`.
+   - (Entry/stop/target *price levels* in the gating step still come from Schwab read-only
+     data via `loops/technicals.py` — same market, Schwab is data-only.)
 
 3. **Run the gating Workflow** `loops/research_workflow.js` with
    `args = { excluded_tickers: [<held tickers> + CXM, MGNI, WWW], net_liq, deployed_pct, headroom_to_70pct, two_pct_budget }`.
