@@ -41,3 +41,20 @@ Target: following count must stay under 150 at all times. Unfollow any account t
 Follower growth priority: accounts already in the warm-up sequence are the most likely to follow back. A second genuine comment on a recent post increases the chance they tap the profile and follow.
 
 Do not send a cold DM to any account while the following count is more than double the follower count. Fix the ratio first.
+
+## Tracker
+The outreach pipeline runs on `lisb_outreach.db` (SQLite), not the Excel file.
+All reads and writes go through `db.py` only.
+The Excel file `LISB_Outreach_Tracker_v2.xlsx` is a frozen backup. Never edit it.
+
+db.py functions:
+- add_account(handle, business_name, niche)
+- update_stage(handle, stage)
+- log_action(handle, action_type, date, text, post_url)
+- get_accounts_by_stage(stage)
+- get_dm_ready()
+- get_bump_ready()
+- is_closed(handle)
+- search(handle)
+
+Valid stages: S0, S1_follow, S2_like, S3_comment1, S4_comment2, S5_dm, S6_bump, S7_warm, S8_closed
