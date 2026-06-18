@@ -40,3 +40,8 @@ dist/
 # Transient OAuth setup artifacts
 .auth_context.json
 .redirect_url.txt
+
+# ---------------------------------------------------------------------------
+# Loop engineering runtime logs (never commit -- may contain account detail)
+# ---------------------------------------------------------------------------
+logs/

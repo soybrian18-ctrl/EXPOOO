@@ -7,3 +7,8 @@
 schwab-py>=1.5.0,<2
 rich>=13.0.0,<16
 python-dotenv>=1.0.0,<2
+
+# Alpaca paper/live trading API -- the AUTOMATED EXECUTION venue (loops/order_executor.py).
+# Schwab (schwab-py) remains strictly read-only; all order placement goes through Alpaca.
+alpaca-py>=0.33,<1
+

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Loop 4 -- Token Refresh Monitor. TEMPLATE ONLY -- NOT LOADED.
+  Before deploying (after all four loops are built + reviewed):
+    1. Replace every {{PROJECT_ROOT}} with the absolute project path
+       (e.g. /Users/boypolo/STOCK/expooo).
+    2. Copy to ~/Library/LaunchAgents/com.stockmonitor.tokenrefresh.plist
+    3. launchctl load ~/Library/LaunchAgents/com.stockmonitor.tokenrefresh.plist
+  Runs weekdays (Mon-Fri) at 08:30 local.
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.stockmonitor.tokenrefresh</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>{{PROJECT_ROOT}}/loops/run.sh</string>
+    <string>loops/token_refresh_monitor.py</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>{{PROJECT_ROOT}}</string>
+
+  <key>StartCalendarInterval</key>
+  <array>
+    <dict><key>Weekday</key><integer>1</integer><key>Hour</key><integer>8</integer><key>Minute</key><integer>30</integer></dict>
+    <dict><key>Weekday</key><integer>2</integer><key>Hour</key><integer>8</integer><key>Minute</key><integer>30</integer></dict>
+    <dict><key>Weekday</key><integer>3</integer><key>Hour</key><integer>8</integer><key>Minute</key><integer>30</integer></dict>
+    <dict><key>Weekday</key><integer>4</integer><key>Hour</key><integer>8</integer><key>Minute</key><integer>30</integer></dict>
+    <dict><key>Weekday</key><integer>5</integer><key>Hour</key><integer>8</integer><key>Minute</key><integer>30</integer></dict>
+  </array>
+
+  <key>RunAtLoad</key>
+  <false/>
+
+  <key>StandardOutPath</key>
+  <string>{{PROJECT_ROOT}}/logs/launchd_tokenrefresh.out</string>
+  <key>StandardErrorPath</key>
+  <string>{{PROJECT_ROOT}}/logs/launchd_tokenrefresh.err</string>
+</dict>
+</plist>

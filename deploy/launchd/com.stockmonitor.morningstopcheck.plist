@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Loop 1 -- Morning Stop Check. TEMPLATE ONLY -- NOT LOADED.
+  Before deploying (after all four loops are built + reviewed):
+    1. Replace every {{PROJECT_ROOT}} with the absolute project path.
+    2. Copy to ~/Library/LaunchAgents/com.stockmonitor.morningstopcheck.plist
+    3. launchctl load ~/Library/LaunchAgents/com.stockmonitor.morningstopcheck.plist
+  Runs weekdays (Mon-Fri) at 08:45 local (15 min after the token monitor).
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.stockmonitor.morningstopcheck</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>{{PROJECT_ROOT}}/loops/run.sh</string>
+    <string>loops/morning_stop_check.py</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>{{PROJECT_ROOT}}</string>
+
+  <key>StartCalendarInterval</key>
+  <array>
+    <dict><key>Weekday</key><integer>1</integer><key>Hour</key><integer>8</integer><key>Minute</key><integer>45</integer></dict>
+    <dict><key>Weekday</key><integer>2</integer><key>Hour</key><integer>8</integer><key>Minute</key><integer>45</integer></dict>
+    <dict><key>Weekday</key><integer>3</integer><key>Hour</key><integer>8</integer><key>Minute</key><integer>45</integer></dict>
+    <dict><key>Weekday</key><integer>4</integer><key>Hour</key><integer>8</integer><key>Minute</key><integer>45</integer></dict>
+    <dict><key>Weekday</key><integer>5</integer><key>Hour</key><integer>8</integer><key>Minute</key><integer>45</integer></dict>
+  </array>
+
+  <key>RunAtLoad</key>
+  <false/>
+
+  <key>StandardOutPath</key>
+  <string>{{PROJECT_ROOT}}/logs/launchd_morningstopcheck.out</string>
+  <key>StandardErrorPath</key>
+  <string>{{PROJECT_ROOT}}/logs/launchd_morningstopcheck.err</string>
+</dict>
+</plist>
