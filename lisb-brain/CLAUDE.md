@@ -9,7 +9,7 @@ Phase 1. Closing first paying clients and building case studies. First client is
 ## Non-Negotiable Copy Rules
 - Use we and us exclusively. Never I or me. This is a studio.
 - Never mention Canva or any design tool. Approved language: fully editable and ready to use.
-- Price appears only on brand reveal CTA slides. Nowhere else.
+- Never show the price publicly. The $175 is discussed only when a prospect asks directly in conversation.
 - No em dashes anywhere. No banned words.
 
 ## Banned Words

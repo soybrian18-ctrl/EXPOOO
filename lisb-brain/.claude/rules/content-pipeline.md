@@ -9,7 +9,7 @@ Pillar 2 is permanently removed.
 
 ## Reel Structure
 7-slide format. Hook, 4 body slides with gold labels, closing statement slide, CTA slide.
-Brand reveals use 8 slides: Hook, 4 brand slides, closing, follow CTA slide, price CTA slide.
+Brand reveals use 8 slides: Hook, 4 brand slides, closing, follow CTA slide, DM CTA slide.
 
 ## Hook Rule
 Never opens with a question. Must stop the scroll in the first 3 seconds.

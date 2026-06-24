@@ -8,7 +8,7 @@ Direct and conversational. Short sentences. No em dashes. Write the way a peer t
 - Pillar 3: Follow us for a new branding tip every week.
 - Pillar 4 and Pillar 5: DM us your niche and we will show you what your brand could look like.
 - Brand reveal CTA slide exact wording: Want this for your business? DM us to get started.
-- Brand reveals add a follow slide before the price CTA: Follow us for next week's reveal.
+- Brand reveals add a follow slide before the DM CTA: Follow us for next week's reveal.
 - Mid-reel tip reels add a spoken follow line at the halfway point: Follow us so you get the rest of the series.
 
 ## Hashtags
