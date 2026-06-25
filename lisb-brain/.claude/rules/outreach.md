@@ -8,6 +8,7 @@ Med spas and aesthetic clinics, luxury auto detailers, high-end landscapers and 
 
 ## Outreach Sequence
 Follow, then like 2 to 3 posts, then Comment 1, then wait 1 to 2 days, then Comment 2 on a different post, then wait, then DM, then one follow-up bump maximum, then close the thread.
+Portfolio sample mapping: boutique fitness and pilates studios point to the Apex Studios portfolio sample.
 
 ## Cold DM Voice
 Open with one specific observation proving the page was read. One sentence only. Reference something visible: a specific service, a recent result, a post detail, an award, or a pattern across their content.
