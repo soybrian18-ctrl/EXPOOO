@@ -61,3 +61,16 @@ Hook examples by structure type:
 - Pattern interrupt: Do this five second Instagram audit on your profile now.
 
 Always identify which structure type the hook uses before approving it for render.
+
+## Content Theme Tracker
+Track themes already covered so future reels do not repeat them.
+
+Covered:
+- Judged before contact (Pillar 1 and Pillar 3). Reels 27, 31, and 33: the bio, the first five seconds of the profile, and the grid. This theme is fully covered. Do not generate more reels on it.
+
+Future Pillar 1 and Pillar 3 reels should move to new topics. Suggested rotation:
+- Pricing perception: why cheap-looking brands lose premium clients
+- The power of before and after proof in service businesses
+- Why reviews and social proof need a visual home on the profile
+- How inconsistent posting frequency signals an unreliable business
+- The difference between a logo and a brand identity
