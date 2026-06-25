@@ -13,6 +13,9 @@
 - North Shore Details. Auto detailing. Matte black and electric blue.
 - Meridian Aesthetics. Med spa. Warm cream and deep mocha.
 - Holloway Landscape Co. Landscaping. Forest green, warm cream, and gold.
+- Apex Studios. Boutique fitness and pilates studio. Palette and style details to be added once known.
+
+Warm lead follow-up maps fitness and pilates prospects to Apex Studios as the closest portfolio reference.
 
 ## Grid Visual Rhythm
 - Standard content uses navy background with white text.
