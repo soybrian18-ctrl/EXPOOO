@@ -9,7 +9,14 @@ Pillar 2 is permanently removed.
 
 ## Reel Structure
 7-slide format. Hook, 4 body slides with gold labels, closing statement slide, CTA slide.
-Brand reveals use 8 slides: Hook, 4 brand slides, closing, follow CTA slide, DM CTA slide.
+Brand reveals use the Concept B brand-in-the-wild structure (references/brand-reveal-concepts.md), not labeled cards:
+1. Logo sting: logo reveal moment, no text overlay, on the client palette.
+2 to 5. Brand on surfaces, beat by beat, no labels: business card in hand, signage (storefront, yard, or vehicle per niche), phone screen showing the new Instagram grid, and one niche-specific surface.
+6. Assembly payoff: pull back and assemble the surfaces into one composed brand world.
+7. Closing statement.
+8. Follow CTA slide: Follow us for next week's reveal.
+9. DM CTA slide: Want this for your business? DM us to get started. No price.
+Keep the reel under 45 seconds; surfaces are quick beats. No labeled brand cards. Mockup quality is the dependency (references/mockup-pipeline-spec.md).
 
 ## Hook Rule
 Never opens with a question. Must stop the scroll in the first 3 seconds.
