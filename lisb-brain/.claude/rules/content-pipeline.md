@@ -52,7 +52,7 @@ Hook score minimum 7. All four checks must pass: hook strength, watch time under
 ## Production Tools
 - ElevenLabs Adam voice. Stability 0.80, similarity 0.90, speed 0.85.
 - Remotion at 1080 by 1920. FADE at 6 frames. 45-frame tail buffer on last slide.
-- Per-slide audio clips. Never one continuous audio block.
+- Voiceover formats use per-slide audio clips and never one continuous block, while The Rebuild uses one continuous music track cut to the beat.
 - ffmpeg for audio mixing.
 - Music sources: Musicbed, Artlist, Epidemic Sound, or Soundstripe for the cinematic and organic-house catalog that fits the luxury aesthetic (references/rebuild-music-direction.md). NCS.io skews gaming and EDM and is the wrong fit for this brand.
 
