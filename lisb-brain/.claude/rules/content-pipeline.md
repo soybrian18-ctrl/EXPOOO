@@ -9,14 +9,16 @@ Pillar 2 is permanently removed.
 
 ## Reel Structure
 7-slide format. Hook, 4 body slides with gold labels, closing statement slide, CTA slide.
-Brand reveals use the Concept B brand-in-the-wild structure (references/brand-reveal-concepts.md), not labeled cards:
-1. Logo sting: logo reveal moment, no text overlay, on the client palette.
-2 to 5. Brand on surfaces, beat by beat, no labels: business card in hand, signage (storefront, yard, or vehicle per niche), phone screen showing the new Instagram grid, and one niche-specific surface.
-6. Assembly payoff: pull back and assemble the surfaces into one composed brand world.
-7. Closing statement.
-8. Follow CTA slide: Follow us for next week's reveal.
-9. DM CTA slide: Want this for your business? DM us to get started. No price.
-Keep the reel under 45 seconds; surfaces are quick beats. No labeled brand cards. Mockup quality is the dependency (references/mockup-pipeline-spec.md).
+The Rebuild is the flagship acquisition format (references/flagship-reel-concept.md). It is music-first and cut to the beat, and it replaces the per-slide voiceover timing for this format specifically. Audio is a single continuous music track with one clear build and one drop, an exception to the per-slide audio clip rule that governs voiceover formats. Text-driven, number-free, no dollar figures on screen. Beats:
+1. Hook: hard cut to the weak before-state. Text punches in on the first downbeat naming the skill-versus-perception gap (the business does great work, the brand does not show it).
+2. Teardown: three fast beat-synced cuts, each naming one problem in customer terms (looks cheap, no reason to call, looks closed), whip transitions between them.
+3. Rebuild: the three fixes snap in, accelerating into the drop, each with its payoff in customer terms (looks like a business you trust, says exactly why to book, looks busy and booked).
+4. Payoff snap: on the music drop, a hard before-to-after flip of the whole profile, then the brand on a phone showing the new feed.
+5. Lesson: music pulls back for one plain line in owner terms (a customer judges your business by your brand before they ever call, so make it match the work).
+6. DM CTA: DM us your niche and we will show you what your brand could look like. No price.
+Under 45 seconds. The premium feel comes from precision (cuts on the beat, one held breath at the payoff, two fonts, brand color discipline), not from slowness.
+
+Brand reveals (Concept B brand-in-the-wild, references/brand-reveal-concepts.md) are now a secondary proof and case-study format, not the lead acquisition reel. They are strongest once we have a real client, and even then they should borrow The Rebuild's kinetic, owner-framed energy rather than running slow and elegant. Structure: logo sting (no text overlay, client palette), brand on surfaces beat by beat (business card, signage per niche, phone showing the Instagram grid, one niche-specific surface), assembly payoff, closing, follow CTA (Follow us for next week's reveal), DM CTA (Want this for your business? DM us to get started, no price). Mockup quality is the dependency (references/mockup-pipeline-spec.md).
 
 ## Hook Rule
 Never opens with a question. Must stop the scroll in the first 3 seconds.
