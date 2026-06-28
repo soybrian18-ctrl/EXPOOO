@@ -54,7 +54,7 @@ Hook score minimum 7. All four checks must pass: hook strength, watch time under
 - Remotion at 1080 by 1920. FADE at 6 frames. 45-frame tail buffer on last slide.
 - Per-slide audio clips. Never one continuous audio block.
 - ffmpeg for audio mixing.
-- NCS.io for background music by genre and mood per niche.
+- Music sources: Musicbed, Artlist, Epidemic Sound, or Soundstripe for the cinematic and organic-house catalog that fits the luxury aesthetic (references/rebuild-music-direction.md). NCS.io skews gaming and EDM and is the wrong fit for this brand.
 
 ## Viral Hook Framework
 When generating hook slides, apply this framework before finalizing:
