@@ -23,11 +23,21 @@ const LOOP_CONFIG = {
 // orchestrator level (TaskStop) + on the deterministic Python ops (60s via
 // run_subprocess). The HARD in-sandbox termination guarantee is MAX_CANDIDATES.
 
-const A = args || {}
+// Robust args intake: accept an object OR a JSON string, then FAIL FAST if the
+// live-balance fields are missing -- a sizing-blind run must never happen again
+// (2026-07-01 defect: gate agents saw "undefined" balance data).
+let A = args
+if (typeof A === 'string') { try { A = JSON.parse(A) } catch { A = null } }
+A = A || {}
+for (const field of ['net_liq', 'deployed_pct', 'headroom_to_70pct', 'two_pct_budget']) {
+  if (typeof A[field] !== 'number' || !isFinite(A[field])) {
+    throw new Error(`research_workflow: required balance arg '${field}' missing/non-numeric -- refusing to run sizing-blind`)
+  }
+}
 const excludedTickers = (A.excluded_tickers || []).map(t => String(t).toUpperCase())
 const balanceNote =
-  `Live balance: Net Liq ${A.net_liq}, deployed ${A.deployed_pct}%, ` +
-  `headroom to 70% = ${A.headroom_to_70pct}, 2% risk budget = ${A.two_pct_budget}. ` +
+  `Live balance: Net Liq $${A.net_liq}, deployed ${A.deployed_pct}%, ` +
+  `headroom to 70% = $${A.headroom_to_70pct}, 2% risk budget = $${A.two_pct_budget}. ` +
   `Held/excluded tickers: ${excludedTickers.join(', ') || '(none)'}.`
 
 const SCREEN_SCHEMA = {
@@ -57,6 +67,8 @@ const GATE_SCHEMA = {
     entry: { type: 'number', description: 'technicals.py "last"' },
     stop: { type: 'number', description: 'technicals.py "suggested_stop"' },
     nearest_resistance: { type: 'number', description: 'technicals.py "nearest_resistance_40d"' },
+    falling_knife: { type: 'boolean', description: 'technicals.py "falling_knife" -- copied verbatim' },
+    valid_setup: { type: 'boolean', description: 'technicals.py "valid_setup" -- copied verbatim' },
     technicals_ran: { type: 'boolean', description: 'true only if loops/technicals.py was run via Bash and its JSON used' },
     // Web-verified rule inputs:
     price_in_range: { type: 'boolean' },
@@ -69,9 +81,9 @@ const GATE_SCHEMA = {
     notes: { type: 'string' },
     sources: { type: 'array', items: { type: 'string' } },
   },
-  required: ['ticker', 'entry', 'stop', 'nearest_resistance', 'technicals_ran',
-             'price_in_range', 'fcf_positive', 'catalyst_within_60d', 'excluded_sector',
-             'no_moat', 'declining_revenue', 'sizing_conflict', 'notes'],
+  required: ['ticker', 'entry', 'stop', 'nearest_resistance', 'falling_knife', 'valid_setup',
+             'technicals_ran', 'price_in_range', 'fcf_positive', 'catalyst_within_60d',
+             'excluded_sector', 'no_moat', 'declining_revenue', 'sizing_conflict', 'notes'],
 }
 
 const DOSSIER_SCHEMA = {
@@ -114,7 +126,8 @@ for (let i = 0; i < pool.length && evaluated.length < LOOP_CONFIG.MAX_CANDIDATES
     `Evaluate candidate ${ticker} (candidate ${n}/${LOOP_CONFIG.MAX_CANDIDATES}) against the trading-rule gates.\n${balanceNote}\n\n` +
     `STEP 1 -- log the start (Bash):\n  .venv/bin/python loops/research_log.py log START "candidate=${n}/${LOOP_CONFIG.MAX_CANDIDATES} ticker=${ticker}"\n\n` +
     `STEP 2 (MANDATORY -- REAL DATA ONLY): run via Bash EXACTLY:\n  .venv/bin/python loops/technicals.py ${ticker}\n` +
-    `Copy "last" -> entry, "suggested_stop" -> stop, "nearest_resistance_40d" -> nearest_resistance VERBATIM from its JSON. ` +
+    `Copy "last" -> entry, "suggested_stop" -> stop, "nearest_resistance_40d" -> nearest_resistance, ` +
+    `"falling_knife" -> falling_knife, "valid_setup" -> valid_setup, ALL VERBATIM from its JSON. ` +
     `Set technicals_ran=true only if you actually ran it and used its numbers. Do NOT invent levels -- this is non-negotiable.\n\n` +
     `STEP 3 -- web-verify: price in $${LOOP_CONFIG.PRICE_MIN}-$${LOOP_CONFIG.PRICE_MAX}; FCF-positive; a real catalyst within 60 days; ` +
     `sector NOT in ${LOOP_CONFIG.EXCLUDED_SECTORS.join(' / ')}; whether it has an economic moat; whether revenue is declining; ` +
@@ -133,6 +146,11 @@ for (let i = 0; i < pool.length && evaluated.length < LOOP_CONFIG.MAX_CANDIDATES
 
   const fails = []
   if (!verdict.technicals_ran) fails.push('technicals_not_run')
+  // Setup validity from REAL technicals (2026-07-01 fix): a fresh 40-session low
+  // is a falling knife, and a stop is only technically anchored if the support
+  // is >=5 sessions old and unbroken -- reject regardless of arithmetic R:R.
+  if (verdict.falling_knife) fails.push('falling_knife_fresh_40d_low')
+  if (verdict.valid_setup === false) fails.push('invalid_technical_setup(support_too_fresh_or_broken)')
   if (!verdict.price_in_range) fails.push('price_band')
   if (!verdict.fcf_positive) fails.push('not_fcf_positive')
   if (!verdict.catalyst_within_60d) fails.push('no_catalyst_within_60d')
@@ -140,10 +158,23 @@ for (let i = 0; i < pool.length && evaluated.length < LOOP_CONFIG.MAX_CANDIDATES
   if (rr == null || rr < LOOP_CONFIG.MIN_RR) fails.push(`rr_below_3to1(${rr})`)
   if (verdict.no_moat && verdict.declining_revenue) fails.push('no_moat_and_declining_revenue')
   if (verdict.sizing_conflict) fails.push('sizing_conflict')
+  // Deterministic sizing gate (2026-07-01 fix): computed here from the validated
+  // balance args, independent of the agent's judgment. Buyable shares are capped
+  // by the $200 notional target ceiling, the 2% risk budget, and the deployment
+  // headroom; fewer than 3 buyable shares violates the "avoid 1-2 share" rule.
+  if (risk && risk > 0 && verdict.entry > 0) {
+    const buyable = Math.min(
+      Math.floor(200 / verdict.entry),
+      Math.floor(A.two_pct_budget / risk),
+      Math.floor(A.headroom_to_70pct / verdict.entry),
+    )
+    if (buyable < 3) fails.push(`sizing_conflict_deterministic(buyable=${buyable})`)
+  }
 
   const rec = {
     ticker, rr: rr == null ? null : Math.round(rr * 100) / 100,
     entry: verdict.entry, stop: verdict.stop, t1: verdict.nearest_resistance,
+    falling_knife: verdict.falling_knife, valid_setup: verdict.valid_setup,
     fails, passed: fails.length === 0, notes: verdict.notes,
   }
   evaluated.push(rec)
