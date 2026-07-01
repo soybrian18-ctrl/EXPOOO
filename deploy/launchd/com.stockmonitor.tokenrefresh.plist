@@ -7,7 +7,7 @@
        (e.g. /Users/boypolo/STOCK/expooo).
     2. Copy to ~/Library/LaunchAgents/com.stockmonitor.tokenrefresh.plist
     3. launchctl load ~/Library/LaunchAgents/com.stockmonitor.tokenrefresh.plist
-  Runs weekdays (Mon-Fri) at 08:30 local.
+  Runs EVERY DAY at 08:30 local (7 days/week) so weekend token expiries are warned.
 -->
 <plist version="1.0">
 <dict>
@@ -23,14 +23,12 @@
   <key>WorkingDirectory</key>
   <string>{{PROJECT_ROOT}}</string>
 
+  <!-- No Weekday key => fires every day (7 days/week) at 08:30 local. -->
   <key>StartCalendarInterval</key>
-  <array>
-    <dict><key>Weekday</key><integer>1</integer><key>Hour</key><integer>8</integer><key>Minute</key><integer>30</integer></dict>
-    <dict><key>Weekday</key><integer>2</integer><key>Hour</key><integer>8</integer><key>Minute</key><integer>30</integer></dict>
-    <dict><key>Weekday</key><integer>3</integer><key>Hour</key><integer>8</integer><key>Minute</key><integer>30</integer></dict>
-    <dict><key>Weekday</key><integer>4</integer><key>Hour</key><integer>8</integer><key>Minute</key><integer>30</integer></dict>
-    <dict><key>Weekday</key><integer>5</integer><key>Hour</key><integer>8</integer><key>Minute</key><integer>30</integer></dict>
-  </array>
+  <dict>
+    <key>Hour</key><integer>8</integer>
+    <key>Minute</key><integer>30</integer>
+  </dict>
 
   <key>RunAtLoad</key>
   <false/>
