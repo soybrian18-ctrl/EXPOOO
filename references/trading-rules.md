@@ -10,9 +10,9 @@ Equity Account Structure:
 
 - Active positions: 3 to 4 stocks maximum at any one time
 
-- Capital deployed in active positions: 60% to 70% of current account value
+- Capital deployed in active positions: 60% to 70% of current account value — deploy into qualified setups only; if no candidate passes the entry gates, holding cash below the band is correct. Never force a trade to reach the deployment band.
 
-- Cash reserve: 30% to 40% held at all times
+- Cash reserve: 30% to 40% minimum; higher is acceptable and expected during edge droughts
 
 - Never be fully deployed
 
@@ -27,6 +27,16 @@ Equity Account Structure:
 - Avoid stocks where you can only afford one or two shares
 
 - No leveraged products, options, or margin
+
+Entry gates (added 2026-07-23 from the live track record — binding):
+
+- Minimum reward-to-risk at Target 1: 3 to 1, computed against a technically anchored stop and real price levels, never estimated ones
+
+- A technically anchored stop sits below tested support that is at least 5 sessions old and unbroken (a shelf of clustered lows or a clear swing low); a low set within the last 5 sessions is not support
+
+- Never enter a falling knife: any name that set a fresh 40-session low within the last 5 sessions is untradeable until it bases
+
+- Liquidity minimum: 300,000 shares average daily volume (30-day average)
 
 Prediction Market Account:
 

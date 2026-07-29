@@ -20,12 +20,16 @@ approval gate at the end is NON-NEGOTIABLE.
      data via `loops/technicals.py` — same market, Schwab is data-only.)
 
 3. **Run the gating Workflow** `loops/research_workflow.js` with
-   `args = { excluded_tickers: [<held tickers> + CXM, MGNI, WWW], net_liq, deployed_pct, headroom_to_70pct, two_pct_budget }`.
-   It screens a candidate pool and gates each candidate (stop at the first approved
-   or after `MAX_CANDIDATES = 5` evaluated) against: **reward:risk ≥ 3:1 at Target 1
-   computed from REAL `loops/technicals.py` levels** (never guessed), **NOT (no moat
-   AND declining revenue)**, **no position-sizing conflict**, price $5–50, FCF-positive,
-   a catalyst within 60 days, and an allowed sector.
+   `args = { excluded_tickers: [<held tickers> + prior exits/rejects], net_liq, deployed_pct, headroom_to_70pct, two_pct_budget }`.
+   Pipeline (2026-07-23): screen a pool → **one deterministic `loops/technicals.py`
+   prefilter pass over the whole pool** (falling-knife, aged-support anchor,
+   **R:R ≥ 3:1 at Target 1 from REAL levels**, ≥300k avg volume, price $5–50, and the
+   full deterministic sizing check) → web-gate the technical survivors only (FCF+,
+   dated catalyst ≤60 days, allowed sector, and the numeric declining-revenue/moat
+   rule) → stop at the first full pass or `MAX_CANDIDATES = 5` survivors gated.
+   **P2 breakout mode runs in SHADOW only:** `SHADOW-BREAKOUT` lines get logged to
+   `logs/research_loop.txt` for review — they are NOT approvals, never produce a
+   report or handoff, and never reach the approval gate.
 
 4. **If the workflow returns `approved: null`** → present the "no qualifying candidate"
    summary (every evaluated ticker + the gate each failed), then **STOP**. There is no

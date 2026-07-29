@@ -1,31 +1,35 @@
 export const meta = {
   name: 'equity-research-loop',
-  description: 'Loop 3: screen + gate equity candidates against the trading rules; stop at first approved or 5 evaluated. Generates research only -- never places orders.',
+  description: 'Loop 3: screen -> deterministic technical prefilter -> web-gate survivors; stop at first approved or MAX_CANDIDATES gated. Generates research only -- never places orders.',
   phases: [
     { title: 'Screen', detail: 'web-screen a candidate pool' },
-    { title: 'Gate', detail: 'evaluate each candidate against the rule gates (real-data R:R)' },
+    { title: 'Prefilter', detail: 'ONE technicals.py pass over the whole pool; deterministic R:R/knife/liquidity/sizing filter (P4)' },
+    { title: 'Gate', detail: 'web-verify survivors only (FCF, catalyst, sector, revenue numbers, moat)' },
     { title: 'Dossier', detail: 'full research for the approved candidate only' },
   ],
 }
 
 // === LOOP_CONFIG (guardrail G1: all caps are named constants, never inline) ===
 const LOOP_CONFIG = {
-  MAX_CANDIDATES: 5,                       // hard iteration cap -> guarantees termination
+  MAX_CANDIDATES: 5,                       // cap on web-gated SURVIVORS -> guarantees termination
   MIN_RR: 3.0,                             // reward:risk gate at Target 1
+  MIN_AVG_VOLUME: 300000,                  // P3 liquidity floor (30-day avg shares/day)
   CANDIDATE_TIMEOUT_SECONDS: 300,          // documented per-candidate budget (see note below)
   OVERALL_TIMEOUT_SECONDS: 1200,           // documented overall budget
   DETERMINISTIC_OP_TIMEOUT_SECONDS: 60,    // applies to technicals.py / research_inputs.py
   PRICE_MIN: 5, PRICE_MAX: 50,
+  MIN_POSITION_USD: 150, MAX_POSITION_USD: 200,
+  MIN_SHARES: 3,
   EXCLUDED_SECTORS: ['packaged food', 'ad-tech / digital advertising', 'consumer footwear'],
 }
 // NOTE on G2: the Workflow JS sandbox has no clock (Date.now is unavailable), so
 // CANDIDATE/OVERALL_TIMEOUT_SECONDS are documented budgets enforced at the
 // orchestrator level (TaskStop) + on the deterministic Python ops (60s via
-// run_subprocess). The HARD in-sandbox termination guarantee is MAX_CANDIDATES.
+// run_subprocess). The HARD in-sandbox termination guarantee is MAX_CANDIDATES
+// plus the single bounded prefilter pass.
 
 // Robust args intake: accept an object OR a JSON string, then FAIL FAST if the
-// live-balance fields are missing -- a sizing-blind run must never happen again
-// (2026-07-01 defect: gate agents saw "undefined" balance data).
+// live-balance fields are missing -- a sizing-blind run must never happen.
 let A = args
 if (typeof A === 'string') { try { A = JSON.parse(A) } catch { A = null } }
 A = A || {}
@@ -59,31 +63,62 @@ const SCREEN_SCHEMA = {
   required: ['candidates'],
 }
 
+// P4: ONE deterministic technicals pass over the whole pool, copied VERBATIM.
+const PREFILTER_SCHEMA = {
+  type: 'object', additionalProperties: false,
+  properties: {
+    results: {
+      type: 'array',
+      items: {
+        type: 'object', additionalProperties: false,
+        properties: {
+          ticker: { type: 'string' },
+          error: { type: 'string' },
+          last: { type: 'number' },
+          suggested_stop: { type: 'number' },
+          risk_per_share: { type: 'number' },
+          nearest_resistance_40d: { type: 'number' },
+          rr_to_resistance: { type: ['number', 'null'] },
+          valid_setup: { type: 'boolean' },
+          falling_knife: { type: 'boolean' },
+          avg_volume_30d: { type: ['number', 'null'] },
+          support_anchor: { type: ['number', 'null'] },
+          support_floor: { type: ['number', 'null'] },
+          // P2 SHADOW fields (logged only -- NEVER feed the live approval path):
+          breakout_valid: { type: 'boolean' },
+          breakout_rr: { type: ['number', 'null'] },
+          breakout_stop: { type: ['number', 'null'] },
+          breakout_t1: { type: ['number', 'null'] },
+        },
+        required: ['ticker'],
+      },
+    },
+  },
+  required: ['results'],
+}
+
+// P5: web gate returns NUMBERS and sourced assessments; the orchestrator applies
+// the thresholds (no more LLM flip-flop on "declining revenue" / "no moat").
 const GATE_SCHEMA = {
   type: 'object', additionalProperties: false,
   properties: {
     ticker: { type: 'string' },
-    // From loops/technicals.py (REAL Schwab levels -- must be copied verbatim, not invented):
-    entry: { type: 'number', description: 'technicals.py "last"' },
-    stop: { type: 'number', description: 'technicals.py "suggested_stop"' },
-    nearest_resistance: { type: 'number', description: 'technicals.py "nearest_resistance_40d"' },
-    falling_knife: { type: 'boolean', description: 'technicals.py "falling_knife" -- copied verbatim' },
-    valid_setup: { type: 'boolean', description: 'technicals.py "valid_setup" -- copied verbatim' },
-    technicals_ran: { type: 'boolean', description: 'true only if loops/technicals.py was run via Bash and its JSON used' },
-    // Web-verified rule inputs:
-    price_in_range: { type: 'boolean' },
+    sector: { type: 'string' },
     fcf_positive: { type: 'boolean' },
+    catalyst: { type: 'string' },
+    catalyst_date: { type: 'string' },
     catalyst_within_60d: { type: 'boolean' },
     excluded_sector: { type: 'boolean' },
-    no_moat: { type: 'boolean' },
-    declining_revenue: { type: 'boolean' },
-    sizing_conflict: { type: 'boolean' },
+    ttm_revenue_growth_pct: { type: ['number', 'null'], description: 'TTM revenue growth %, cited; null only if unfindable' },
+    latest_fy_revenue_growth_pct: { type: ['number', 'null'], description: 'latest full fiscal-year revenue growth %, cited' },
+    moat_assessment: { type: 'string', description: "'none' | 'narrow' | 'wide'" },
+    moat_source: { type: 'string', description: 'where the moat call comes from (e.g. Morningstar rating, own assessment)' },
     notes: { type: 'string' },
     sources: { type: 'array', items: { type: 'string' } },
   },
-  required: ['ticker', 'entry', 'stop', 'nearest_resistance', 'falling_knife', 'valid_setup',
-             'technicals_ran', 'price_in_range', 'fcf_positive', 'catalyst_within_60d',
-             'excluded_sector', 'no_moat', 'declining_revenue', 'sizing_conflict', 'notes'],
+  required: ['ticker', 'sector', 'fcf_positive', 'catalyst', 'catalyst_date', 'catalyst_within_60d',
+             'excluded_sector', 'ttm_revenue_growth_pct', 'latest_fy_revenue_growth_pct',
+             'moat_assessment', 'moat_source', 'notes'],
 }
 
 const DOSSIER_SCHEMA = {
@@ -100,14 +135,41 @@ const DOSSIER_SCHEMA = {
              'management', 'risks', 'catalyst_market', 'analyst_pt', 'data_gaps'],
 }
 
+// P6: FULLY deterministic sizing -- single source of truth in the orchestrator.
+function sizingCheck(entry, risk) {
+  if (!(risk > 0) || !(entry > 0)) return { ok: false, buyable: 0 }
+  const buyable = Math.min(
+    Math.floor(LOOP_CONFIG.MAX_POSITION_USD / entry),
+    Math.floor(A.two_pct_budget / risk),
+    Math.floor(A.headroom_to_70pct / entry),
+  )
+  return { ok: buyable >= LOOP_CONFIG.MIN_SHARES && buyable * entry >= LOOP_CONFIG.MIN_POSITION_USD, buyable }
+}
+
+// Deterministic technical verdict for one prefilter row (P1/P3/P4 + sizing P6).
+function technicalFails(r) {
+  const fails = []
+  if (r.error) { fails.push(`data_error(${String(r.error).slice(0, 40)})`); return fails }
+  if (r.falling_knife) fails.push('falling_knife_fresh_40d_low')
+  if (r.valid_setup === false) fails.push('invalid_technical_setup')
+  if (!(r.last >= LOOP_CONFIG.PRICE_MIN && r.last <= LOOP_CONFIG.PRICE_MAX)) fails.push('price_band')
+  if (r.rr_to_resistance == null || r.rr_to_resistance < LOOP_CONFIG.MIN_RR) fails.push(`rr_below_3to1(${r.rr_to_resistance})`)
+  if ((r.avg_volume_30d || 0) < LOOP_CONFIG.MIN_AVG_VOLUME) fails.push(`liquidity(${r.avg_volume_30d})`)
+  const s = sizingCheck(r.last, r.risk_per_share)
+  if (!s.ok) fails.push(`sizing_conflict_deterministic(buyable=${s.buyable})`)
+  return fails
+}
+
 // --- Screen a candidate pool (more than MAX_CANDIDATES so the gate has options) ---
 phase('Screen')
 const screen = await agent(
   `Screen US-listed common stocks as equity-trade candidates. Constraints: price ` +
   `$${LOOP_CONFIG.PRICE_MIN}-$${LOOP_CONFIG.PRICE_MAX}, FCF-positive, a clear catalyst within 60 days, ` +
+  `avg daily volume >= ${LOOP_CONFIG.MIN_AVG_VOLUME.toLocaleString()} shares, ` +
   `NOT in ${LOOP_CONFIG.EXCLUDED_SECTORS.join(' / ')}, and NOT these held tickers: ` +
-  `${excludedTickers.join(', ') || '(none)'}. Use live web search. Favor names near support with ` +
-  `room to a real resistance (so a 3:1 reward:risk is plausible). Return 8-12 tickers ranked by conviction.`,
+  `${excludedTickers.join(', ') || '(none)'}. Use live web search. Favor names basing above tested ` +
+  `support with room to real overhead resistance (3:1 reward:risk plausible) -- NOT names collapsing ` +
+  `to fresh lows. Return 8-12 tickers ranked by conviction.`,
   { label: 'screen', phase: 'Screen', schema: SCREEN_SCHEMA }
 )
 
@@ -115,77 +177,92 @@ const pool = (screen?.candidates || [])
   .map(c => String(c.ticker).toUpperCase())
   .filter(t => t && !excludedTickers.includes(t))
 
-// --- Bounded gating loop: stop at first approved OR after MAX_CANDIDATES evaluated ---
+// --- P4: one deterministic technicals pass over the ENTIRE pool ---
+phase('Prefilter')
+const pre = pool.length === 0 ? { results: [] } : await agent(
+  `Run this EXACT command via Bash (single call, all tickers at once):\n` +
+  `  .venv/bin/python loops/technicals.py ${pool.join(' ')}\n` +
+  `Copy each ticker's JSON fields VERBATIM into the schema (ticker, error, last, suggested_stop, ` +
+  `risk_per_share, nearest_resistance_40d, rr_to_resistance, valid_setup, falling_knife, ` +
+  `avg_volume_30d, support_anchor, support_floor, breakout_valid, breakout_rr, breakout_stop, breakout_t1). ` +
+  `Do NOT invent or adjust numbers -- this is non-negotiable.\n\n` +
+  `THEN, for every ticker whose breakout_valid=true AND breakout_rr>=${LOOP_CONFIG.MIN_RR}, log a SHADOW ` +
+  `line via Bash (P2 shadow mode -- these are NOT tradeable and never reach approval):\n` +
+  `  .venv/bin/python loops/research_log.py record <TICKER> SHADOW-BREAKOUT "would-approve breakout: rr=<breakout_rr> stop=<breakout_stop> t1=<breakout_t1> (shadow only)"\n` +
+  `Finally log the batch summary:\n` +
+  `  .venv/bin/python loops/research_log.py log PREFILTER "pool=${pool.length} tickers=${pool.join(',')}"`,
+  { label: `prefilter:${pool.length}`, phase: 'Prefilter', schema: PREFILTER_SCHEMA }
+)
+
+const preRows = (pre?.results || []).filter(r => r && r.ticker)
+const preEvaluated = preRows.map(r => {
+  const fails = technicalFails(r)
+  return {
+    ticker: String(r.ticker).toUpperCase(), stage: 'prefilter',
+    rr: r.rr_to_resistance ?? null, entry: r.last ?? null, stop: r.suggested_stop ?? null,
+    t1: r.nearest_resistance_40d ?? null, fails, passed: fails.length === 0,
+    shadow_breakout: !!(r.breakout_valid && (r.breakout_rr ?? 0) >= LOOP_CONFIG.MIN_RR),
+    breakout_rr: r.breakout_rr ?? null,
+  }
+})
+const survivors = preEvaluated.filter(r => r.passed)
+const shadowWouldApprove = preEvaluated.filter(r => r.shadow_breakout)
+log(`Prefilter: ${preRows.length} screened -> ${survivors.length} technical survivors; ` +
+    `${shadowWouldApprove.length} SHADOW breakout would-approves (logged, not tradeable)`)
+
+// --- Gate: web verification for SURVIVORS ONLY (bounded by MAX_CANDIDATES) ---
 phase('Gate')
 let approved = null
-const evaluated = []
-for (let i = 0; i < pool.length && evaluated.length < LOOP_CONFIG.MAX_CANDIDATES && !approved; i++) {
-  const ticker = pool[i]
-  const n = evaluated.length + 1
+const gated = []
+for (let i = 0; i < survivors.length && gated.length < LOOP_CONFIG.MAX_CANDIDATES && !approved; i++) {
+  const cand = survivors[i]
+  const ticker = cand.ticker
   const verdict = await agent(
-    `Evaluate candidate ${ticker} (candidate ${n}/${LOOP_CONFIG.MAX_CANDIDATES}) against the trading-rule gates.\n${balanceNote}\n\n` +
-    `STEP 1 -- log the start (Bash):\n  .venv/bin/python loops/research_log.py log START "candidate=${n}/${LOOP_CONFIG.MAX_CANDIDATES} ticker=${ticker}"\n\n` +
-    `STEP 2 (MANDATORY -- REAL DATA ONLY): run via Bash EXACTLY:\n  .venv/bin/python loops/technicals.py ${ticker}\n` +
-    `Copy "last" -> entry, "suggested_stop" -> stop, "nearest_resistance_40d" -> nearest_resistance, ` +
-    `"falling_knife" -> falling_knife, "valid_setup" -> valid_setup, ALL VERBATIM from its JSON. ` +
-    `Set technicals_ran=true only if you actually ran it and used its numbers. Do NOT invent levels -- this is non-negotiable.\n\n` +
-    `STEP 3 -- web-verify: price in $${LOOP_CONFIG.PRICE_MIN}-$${LOOP_CONFIG.PRICE_MAX}; FCF-positive; a real catalyst within 60 days; ` +
-    `sector NOT in ${LOOP_CONFIG.EXCLUDED_SECTORS.join(' / ')}; whether it has an economic moat; whether revenue is declining; ` +
-    `and whether a $150-200 position at the 2% risk budget fits the 60-70% deployment band (sizing_conflict).\n\n` +
-    `STEP 4 -- log the result (Bash):\n  .venv/bin/python loops/research_log.py record ${ticker} <PASS-or-FAIL> "<one-line reason>"\n\n` +
-    `Return the technicals fields verbatim plus the web findings. The orchestrator computes the final R:R gate.`,
+    `Web-verify candidate ${ticker} (survivor ${gated.length + 1}/${Math.min(survivors.length, LOOP_CONFIG.MAX_CANDIDATES)}) ` +
+    `for the trading-rule gates. Technicals already passed deterministically (entry=${cand.entry}, stop=${cand.stop}, ` +
+    `T1=${cand.t1}, R:R=${cand.rr}). ${balanceNote}\n\n` +
+    `STEP 1 -- log the start (Bash):\n  .venv/bin/python loops/research_log.py log START "gate ticker=${ticker}"\n\n` +
+    `STEP 2 -- web-verify with live sources and CITE them: FCF-positive (most recent FY and/or TTM); a real, dated ` +
+    `catalyst within 60 days; sector NOT in ${LOOP_CONFIG.EXCLUDED_SECTORS.join(' / ')}; ` +
+    `TTM revenue growth % and latest-FY revenue growth % as NUMBERS (cited -- the orchestrator applies the ` +
+    `declining-revenue rule, not you); moat_assessment as 'none'/'narrow'/'wide' with moat_source ` +
+    `(prefer a published rating; else say 'own assessment').\n\n` +
+    `STEP 3 -- log the result (Bash):\n  .venv/bin/python loops/research_log.py record ${ticker} <PASS-or-FAIL> "<one-line reason>"`,
     { label: `gate:${ticker}`, phase: 'Gate', schema: GATE_SCHEMA }
   )
-
-  if (!verdict) { evaluated.push({ ticker, passed: false, fails: ['agent_error'] }); continue }
-
-  // Deterministic R:R from the REAL technicals levels (H4): risk = entry-stop, rr = (T1-entry)/risk.
-  const risk = (verdict.entry != null && verdict.stop != null) ? (verdict.entry - verdict.stop) : null
-  const rr = (risk && risk > 0 && verdict.nearest_resistance != null)
-    ? (verdict.nearest_resistance - verdict.entry) / risk : null
+  if (!verdict) { gated.push({ ticker, stage: 'gate', passed: false, fails: ['agent_error'] }); continue }
 
   const fails = []
-  if (!verdict.technicals_ran) fails.push('technicals_not_run')
-  // Setup validity from REAL technicals (2026-07-01 fix): a fresh 40-session low
-  // is a falling knife, and a stop is only technically anchored if the support
-  // is >=5 sessions old and unbroken -- reject regardless of arithmetic R:R.
-  if (verdict.falling_knife) fails.push('falling_knife_fresh_40d_low')
-  if (verdict.valid_setup === false) fails.push('invalid_technical_setup(support_too_fresh_or_broken)')
-  if (!verdict.price_in_range) fails.push('price_band')
   if (!verdict.fcf_positive) fails.push('not_fcf_positive')
   if (!verdict.catalyst_within_60d) fails.push('no_catalyst_within_60d')
   if (verdict.excluded_sector) fails.push('excluded_sector')
-  if (rr == null || rr < LOOP_CONFIG.MIN_RR) fails.push(`rr_below_3to1(${rr})`)
-  if (verdict.no_moat && verdict.declining_revenue) fails.push('no_moat_and_declining_revenue')
-  if (verdict.sizing_conflict) fails.push('sizing_conflict')
-  // Deterministic sizing gate (2026-07-01 fix): computed here from the validated
-  // balance args, independent of the agent's judgment. Buyable shares are capped
-  // by the $200 notional target ceiling, the 2% risk budget, and the deployment
-  // headroom; fewer than 3 buyable shares violates the "avoid 1-2 share" rule.
-  if (risk && risk > 0 && verdict.entry > 0) {
-    const buyable = Math.min(
-      Math.floor(200 / verdict.entry),
-      Math.floor(A.two_pct_budget / risk),
-      Math.floor(A.headroom_to_70pct / verdict.entry),
-    )
-    if (buyable < 3) fails.push(`sizing_conflict_deterministic(buyable=${buyable})`)
-  }
+  // P5: deterministic declining-revenue rule -- BOTH the TTM and the latest full
+  // fiscal year must be negative to count as declining (kills classification
+  // flip-flop; DVN's +7.8% FY / -1.5% TTM reads NOT-declining in both runs).
+  const ttm = verdict.ttm_revenue_growth_pct
+  const fy = verdict.latest_fy_revenue_growth_pct
+  const declining = (typeof ttm === 'number' && ttm < 0) && (typeof fy === 'number' && fy < 0)
+  const noMoat = String(verdict.moat_assessment || '').toLowerCase() === 'none'
+  if (noMoat && declining) fails.push(`no_moat_and_declining_revenue(ttm=${ttm},fy=${fy})`)
 
   const rec = {
-    ticker, rr: rr == null ? null : Math.round(rr * 100) / 100,
-    entry: verdict.entry, stop: verdict.stop, t1: verdict.nearest_resistance,
-    falling_knife: verdict.falling_knife, valid_setup: verdict.valid_setup,
+    ticker, stage: 'gate', rr: cand.rr, entry: cand.entry, stop: cand.stop, t1: cand.t1,
+    catalyst: verdict.catalyst, catalyst_date: verdict.catalyst_date,
+    ttm_rev_pct: ttm, fy_rev_pct: fy, moat: verdict.moat_assessment, moat_source: verdict.moat_source,
     fails, passed: fails.length === 0, notes: verdict.notes,
   }
-  evaluated.push(rec)
+  gated.push(rec)
   if (rec.passed) approved = rec
 }
 
 if (!approved) {
   return {
     approved: null,
-    evaluated,
-    reason: pool.length === 0 ? 'no_candidates_screened' : 'none_of_evaluated_passed',
+    prefilter: preEvaluated,
+    gated,
+    shadow_breakouts: shadowWouldApprove,
+    reason: pool.length === 0 ? 'no_candidates_screened'
+      : survivors.length === 0 ? 'no_technical_survivors' : 'none_of_gated_passed',
   }
 }
 
@@ -198,4 +275,4 @@ const dossier = await agent(
   { label: `dossier:${approved.ticker}`, phase: 'Dossier', schema: DOSSIER_SCHEMA }
 )
 
-return { approved, dossier, evaluated }
+return { approved, dossier, prefilter: preEvaluated, gated, shadow_breakouts: shadowWouldApprove }
