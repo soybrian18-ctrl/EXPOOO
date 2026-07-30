@@ -76,6 +76,7 @@ Track themes already covered so future reels do not repeat them.
 
 Covered:
 - Judged before contact (Pillar 1 and Pillar 3). Reels 27, 31, and 33: the bio, the first five seconds of the profile, and the grid. This theme is fully covered. Do not generate more reels on it.
+- Bio conversion checklist (Pillar 3). Reel 39, the three-line bio that gets the DM, covers this in the kinetic standard and supersedes the old Reel 29 bio checklist concept from the 7-slide standard, which was never produced. Do not generate another bio checklist reel.
 
 Future Pillar 1 and Pillar 3 reels should move to new topics. Suggested rotation:
 - Pricing perception: why cheap-looking brands lose premium clients
