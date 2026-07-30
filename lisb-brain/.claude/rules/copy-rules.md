@@ -10,7 +10,7 @@ Direct and conversational. Short sentences. No em dashes. Write the way a peer t
 - Pillar 5: Follow us for more on making your business look the part. Vary the wording every time so no two reels repeat the same line. Offer versions use the DM CTA: DM us your niche and we will show you what your brand could look like.
 - Brand reveal CTA slide exact wording: Want this for your business? DM us to get started.
 - Brand reveals add a follow slide before the DM CTA: Follow us for next week's reveal.
-- Mid-reel tip reels add a spoken follow line at the halfway point: Follow us so you get the rest of the series.
+- Mid-reel tip reels add a follow line at the halfway point, spoken in voiceover formats and as an on-screen lower-third in the kinetic format: Follow us so you get the rest of the series.
 
 ## Hashtags
 Exactly 5 per post placed in the caption. Standard set: #longislandbusiness #servicebusiness #brandingdesign #smallbusinessbranding #brandidentity. One niche-specific swap allowed per reel.
