@@ -22,7 +22,7 @@
 
 All anchor brands are fictional portfolio concepts and are never presented as real clients.
 
-Warm lead follow-up maps fitness and pilates prospects to Apex Studios as the closest portfolio reference.
+Warm lead follow-up maps fitness and pilates prospects to Eastlight Pilates as the closest portfolio reference.
 
 ## Grid Visual Rhythm
 - Standard content uses navy background with white text.
