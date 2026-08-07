@@ -80,9 +80,9 @@ Covered:
 - Pricing power (Pillar 1). Reel 37, two businesses doing the same work while one charges double, covers the pricing perception rotation topic.
 - Grid conversion checklist (Pillar 3). Reel 43, the three checks a converting grid needs, covers the checklist form of the grid topic in the kinetic standard alongside the Reel 33 diagnosis. Do not generate another grid checklist reel.
 - Consistency (Pillar 5). Reel 42, consistency compounds, partially brushes the inconsistent-posting rotation topic from the owner mindset side. A future Pillar 1 or Pillar 3 reel on inconsistent posting must lean on the customer perception mechanism to stay distinct.
+- Before and after proof (Pillar 1). Reel 49, your best ad already exists and presented proof wins bigger jobs, covers the before and after proof rotation topic.
 
 Future Pillar 1 and Pillar 3 reels should move to new topics. Suggested rotation:
-- The power of before and after proof in service businesses
 - Why reviews and social proof need a visual home on the profile
 - How inconsistent posting frequency signals an unreliable business
 - The difference between a logo and a brand identity
