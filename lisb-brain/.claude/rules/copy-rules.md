@@ -35,3 +35,5 @@ Caption must include a save trigger and a share trigger. Under 2200 characters t
 Brand reveal captions open with portfolio framing, never a client announcement. Name the brand as one of our portfolio brands, then say what we built for it. Anchor brands are fictional portfolio concepts, so no caption may imply a real client or paid engagement. Do not open a reveal caption with we just built or we just rebuilt followed by the brand name.
 
 Portfolio spotlight carousels use the same portfolio framing, name what is on each slide in swipe order, close on the Pillar 4 DM CTA, and keep the save and share triggers.
+
+Preflight framing check. Fail any reveal or portfolio caption whose opening claims the work as a client engagement: we just built, we just rebuilt, we just gave, we just created, or this is the brand we built. Pass requires the opening to name the brand as one of our portfolio brands before describing the pack.
