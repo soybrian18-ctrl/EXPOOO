@@ -77,7 +77,7 @@ Track themes already covered so future reels do not repeat them.
 Covered:
 - Judged before contact (Pillar 1 and Pillar 3). Reels 27, 31, and 33: the bio, the first five seconds of the profile, and the grid. This theme is fully covered. Do not generate more reels on it.
 - Bio conversion checklist (Pillar 3). Reel 40, the three-line bio that gets the DM, covers this in the kinetic standard and supersedes the old Reel 29 bio checklist concept from the 7-slide standard, which was never produced. Do not generate another bio checklist reel.
-- Pricing power (Pillar 1). Reel 37, two businesses doing the same work while one charges double, covers the pricing perception rotation topic.
+- Pricing power (Pillar 1). Reel 38, two businesses doing the same work while one charges double, covers the pricing perception rotation topic.
 - Grid conversion checklist (Pillar 3). Reel 43, the three checks a converting grid needs, covers the checklist form of the grid topic in the kinetic standard alongside the Reel 33 diagnosis. Do not generate another grid checklist reel.
 - Consistency (Pillar 5). Reel 42, consistency compounds, partially brushes the inconsistent-posting rotation topic from the owner mindset side. A future Pillar 1 or Pillar 3 reel on inconsistent posting must lean on the customer perception mechanism to stay distinct.
 - Before and after proof (Pillar 1). Reel 49, your best ad already exists and presented proof wins bigger jobs, covers the before and after proof rotation topic.
