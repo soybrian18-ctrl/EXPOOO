@@ -38,7 +38,39 @@ for (const field of ['net_liq', 'deployed_pct', 'headroom_to_70pct', 'two_pct_bu
     throw new Error(`research_workflow: required balance arg '${field}' missing/non-numeric -- refusing to run sizing-blind`)
   }
 }
+// C1 (2026-08-12): sector cap needs the sectors of CURRENT holdings. Fail fast if
+// absent -- a sector-blind run allowed 3x consumer discretionary and two of the
+// three stopped out in 16 minutes on one macro move (2026-08-12).
+if (typeof A.held_sectors !== 'object' || A.held_sectors === null || Array.isArray(A.held_sectors)) {
+  throw new Error("research_workflow: required arg 'held_sectors' missing (object ticker->GICS sector) -- refusing to run sector-blind")
+}
 const excludedTickers = (A.excluded_tickers || []).map(t => String(t).toUpperCase())
+
+// --- C1: GICS normalization (deterministic; agents report, code judges) --------
+const GICS_SECTORS = ['Energy', 'Materials', 'Industrials', 'Consumer Discretionary',
+  'Consumer Staples', 'Health Care', 'Financials', 'Information Technology',
+  'Communication Services', 'Utilities', 'Real Estate']
+const GICS_SYNONYMS = {
+  'consumer cyclical': 'Consumer Discretionary', 'consumer defensive': 'Consumer Staples',
+  'technology': 'Information Technology', 'tech': 'Information Technology',
+  'information tech': 'Information Technology', 'healthcare': 'Health Care',
+  'telecom': 'Communication Services', 'telecommunications': 'Communication Services',
+  'communications': 'Communication Services', 'financial': 'Financials',
+  'financial services': 'Financials', 'basic materials': 'Materials',
+}
+function normalizeSector(raw) {
+  const s = String(raw || '').trim().toLowerCase()
+  for (const g of GICS_SECTORS) if (g.toLowerCase() === s) return g
+  if (GICS_SYNONYMS[s]) return GICS_SYNONYMS[s]
+  for (const g of GICS_SECTORS) if (s.includes(g.toLowerCase())) return g
+  return null  // unmappable -> caller fails closed
+}
+const heldSectorCounts = {}
+for (const [tkr, sec] of Object.entries(A.held_sectors)) {
+  const n = normalizeSector(sec)
+  if (!n) throw new Error(`research_workflow: held_sectors['${tkr}']='${sec}' does not map to a GICS sector`)
+  heldSectorCounts[n] = (heldSectorCounts[n] || 0) + 1
+}
 const balanceNote =
   `Live balance: Net Liq $${A.net_liq}, deployed ${A.deployed_pct}%, ` +
   `headroom to 70% = $${A.headroom_to_70pct}, 2% risk budget = $${A.two_pct_budget}. ` +
@@ -84,11 +116,12 @@ const PREFILTER_SCHEMA = {
           avg_volume_30d: { type: ['number', 'null'] },
           support_anchor: { type: ['number', 'null'] },
           support_floor: { type: ['number', 'null'] },
-          // P2 SHADOW fields (logged only -- NEVER feed the live approval path):
-          breakout_valid: { type: 'boolean' },
-          breakout_rr: { type: ['number', 'null'] },
-          breakout_stop: { type: ['number', 'null'] },
-          breakout_t1: { type: ['number', 'null'] },
+          // P2 breakout mode RETIRED 2026-08-12: full-population replay showed a
+          // 20% hit rate against ~20% breakeven with all positive R from 2 of 10
+          // trades, and none of the motivating escapes were base-and-confirm
+          // breakouts. technicals.py still computes breakout_* fields solely for
+          // loops/breakout_replay.py (research harness); the live pipeline
+          // neither consumes nor logs them.
         },
         required: ['ticker'],
       },
@@ -113,12 +146,22 @@ const GATE_SCHEMA = {
     latest_fy_revenue_growth_pct: { type: ['number', 'null'], description: 'latest full fiscal-year revenue growth %, cited' },
     moat_assessment: { type: 'string', description: "'none' | 'narrow' | 'wide'" },
     moat_source: { type: 'string', description: 'where the moat call comes from (e.g. Morningstar rating, own assessment)' },
+    // C1: GICS sector -- agents REPORT it, the orchestrator judges the cap.
+    gics_sector: { type: 'string', description: 'one of the 11 GICS sectors, best classification' },
+    sector_source: { type: 'string', description: 'where the sector classification comes from' },
+    // C3: insider BUYING signal (surfaced, not gated) -- Form 4 open-market purchases.
+    insider_buys_90d: { type: ['number', 'null'], description: 'count of open-market insider BUY transactions, trailing 90 days; null if undeterminable' },
+    insider_buyers_90d: { type: ['number', 'null'], description: 'distinct insiders who bought in the trailing 90 days' },
+    insider_buy_total_usd: { type: ['number', 'null'], description: 'aggregate $ value of those purchases; null if undeterminable' },
+    insider_data_note: { type: 'string', description: 'source + caveats (e.g. foreign private issuer -> no Form 4s)' },
     notes: { type: 'string' },
     sources: { type: 'array', items: { type: 'string' } },
   },
   required: ['ticker', 'sector', 'fcf_positive', 'catalyst', 'catalyst_date', 'catalyst_within_60d',
              'excluded_sector', 'ttm_revenue_growth_pct', 'latest_fy_revenue_growth_pct',
-             'moat_assessment', 'moat_source', 'notes'],
+             'moat_assessment', 'moat_source', 'gics_sector', 'sector_source',
+             'insider_buys_90d', 'insider_buyers_90d', 'insider_buy_total_usd', 'insider_data_note',
+             'notes'],
 }
 
 const DOSSIER_SCHEMA = {
@@ -184,11 +227,8 @@ const pre = pool.length === 0 ? { results: [] } : await agent(
   `  .venv/bin/python loops/technicals.py ${pool.join(' ')}\n` +
   `Copy each ticker's JSON fields VERBATIM into the schema (ticker, error, last, suggested_stop, ` +
   `risk_per_share, nearest_resistance_40d, rr_to_resistance, valid_setup, falling_knife, ` +
-  `avg_volume_30d, support_anchor, support_floor, breakout_valid, breakout_rr, breakout_stop, breakout_t1). ` +
+  `avg_volume_30d, support_anchor, support_floor). ` +
   `Do NOT invent or adjust numbers -- this is non-negotiable.\n\n` +
-  `THEN, for every ticker whose breakout_valid=true AND breakout_rr>=${LOOP_CONFIG.MIN_RR}, log a SHADOW ` +
-  `line via Bash (P2 shadow mode -- these are NOT tradeable and never reach approval):\n` +
-  `  .venv/bin/python loops/research_log.py record <TICKER> SHADOW-BREAKOUT "would-approve breakout: rr=<breakout_rr> stop=<breakout_stop> t1=<breakout_t1> (shadow only)"\n` +
   `Finally log the batch summary:\n` +
   `  .venv/bin/python loops/research_log.py log PREFILTER "pool=${pool.length} tickers=${pool.join(',')}"`,
   { label: `prefilter:${pool.length}`, phase: 'Prefilter', schema: PREFILTER_SCHEMA }
@@ -201,14 +241,10 @@ const preEvaluated = preRows.map(r => {
     ticker: String(r.ticker).toUpperCase(), stage: 'prefilter',
     rr: r.rr_to_resistance ?? null, entry: r.last ?? null, stop: r.suggested_stop ?? null,
     t1: r.nearest_resistance_40d ?? null, fails, passed: fails.length === 0,
-    shadow_breakout: !!(r.breakout_valid && (r.breakout_rr ?? 0) >= LOOP_CONFIG.MIN_RR),
-    breakout_rr: r.breakout_rr ?? null,
   }
 })
 const survivors = preEvaluated.filter(r => r.passed)
-const shadowWouldApprove = preEvaluated.filter(r => r.shadow_breakout)
-log(`Prefilter: ${preRows.length} screened -> ${survivors.length} technical survivors; ` +
-    `${shadowWouldApprove.length} SHADOW breakout would-approves (logged, not tradeable)`)
+log(`Prefilter: ${preRows.length} screened -> ${survivors.length} technical survivors`)
 
 // --- Gate: web verification for SURVIVORS ONLY (bounded by MAX_CANDIDATES) ---
 phase('Gate')
@@ -226,7 +262,11 @@ for (let i = 0; i < survivors.length && gated.length < LOOP_CONFIG.MAX_CANDIDATE
     `catalyst within 60 days; sector NOT in ${LOOP_CONFIG.EXCLUDED_SECTORS.join(' / ')}; ` +
     `TTM revenue growth % and latest-FY revenue growth % as NUMBERS (cited -- the orchestrator applies the ` +
     `declining-revenue rule, not you); moat_assessment as 'none'/'narrow'/'wide' with moat_source ` +
-    `(prefer a published rating; else say 'own assessment').\n\n` +
+    `(prefer a published rating; else say 'own assessment'); gics_sector as the company's GICS sector ` +
+    `(one of: ${GICS_SECTORS.join(', ')}) with sector_source -- the orchestrator enforces the sector cap, not you; ` +
+    `and INSIDER BUYING (Form 4 open-market purchases, trailing 90 days): insider_buys_90d (count), ` +
+    `insider_buyers_90d (distinct buyers), insider_buy_total_usd ($ total), insider_data_note (source + caveats; ` +
+    `if the company is a foreign private issuer with no Form 4s, return nulls and say so).\n\n` +
     `STEP 3 -- log the result (Bash):\n  .venv/bin/python loops/research_log.py record ${ticker} <PASS-or-FAIL> "<one-line reason>"`,
     { label: `gate:${ticker}`, phase: 'Gate', schema: GATE_SCHEMA }
   )
@@ -244,11 +284,26 @@ for (let i = 0; i < survivors.length && gated.length < LOOP_CONFIG.MAX_CANDIDATE
   const declining = (typeof ttm === 'number' && ttm < 0) && (typeof fy === 'number' && fy < 0)
   const noMoat = String(verdict.moat_assessment || '').toLowerCase() === 'none'
   if (noMoat && declining) fails.push(`no_moat_and_declining_revenue(ttm=${ttm},fy=${fy})`)
+  // C1 (2026-08-12): deterministic GICS sector cap -- max 2 open positions per
+  // sector; a would-be 3rd fails regardless of R:R (the 8/12 consumer-disc sweep
+  // stopped 2 of 3 same-sector positions in 16 minutes). 2nd-in-sector = soft flag.
+  const gics = normalizeSector(verdict.gics_sector)
+  let sectorFlag = null
+  if (!gics) {
+    fails.push(`sector_unclassifiable('${verdict.gics_sector}')`)  // fail closed
+  } else {
+    const heldInSector = heldSectorCounts[gics] || 0
+    if (heldInSector >= 2) fails.push(`sector_concentration_3rd(${gics}: ${heldInSector} held)`)
+    else if (heldInSector === 1) sectorFlag = `2nd position in ${gics} (soft flag -- passes, surfaced per C1)`
+  }
 
   const rec = {
     ticker, stage: 'gate', rr: cand.rr, entry: cand.entry, stop: cand.stop, t1: cand.t1,
     catalyst: verdict.catalyst, catalyst_date: verdict.catalyst_date,
     ttm_rev_pct: ttm, fy_rev_pct: fy, moat: verdict.moat_assessment, moat_source: verdict.moat_source,
+    gics_sector: gics || verdict.gics_sector, sector_flag: sectorFlag,
+    insider_buys_90d: verdict.insider_buys_90d, insider_buyers_90d: verdict.insider_buyers_90d,
+    insider_buy_total_usd: verdict.insider_buy_total_usd, insider_data_note: verdict.insider_data_note,
     fails, passed: fails.length === 0, notes: verdict.notes,
   }
   gated.push(rec)
@@ -260,7 +315,6 @@ if (!approved) {
     approved: null,
     prefilter: preEvaluated,
     gated,
-    shadow_breakouts: shadowWouldApprove,
     reason: pool.length === 0 ? 'no_candidates_screened'
       : survivors.length === 0 ? 'no_technical_survivors' : 'none_of_gated_passed',
   }
@@ -275,4 +329,4 @@ const dossier = await agent(
   { label: `dossier:${approved.ticker}`, phase: 'Dossier', schema: DOSSIER_SCHEMA }
 )
 
-return { approved, dossier, prefilter: preEvaluated, gated, shadow_breakouts: shadowWouldApprove }
+return { approved, dossier, prefilter: preEvaluated, gated }

@@ -20,23 +20,33 @@ approval gate at the end is NON-NEGOTIABLE.
      data via `loops/technicals.py` — same market, Schwab is data-only.)
 
 3. **Run the gating Workflow** `loops/research_workflow.js` with
-   `args = { excluded_tickers: [<held tickers> + prior exits/rejects], net_liq, deployed_pct, headroom_to_70pct, two_pct_budget }`.
+   `args = { excluded_tickers: [<held tickers> + prior exits/rejects], net_liq, deployed_pct, headroom_to_70pct, two_pct_budget, held_sectors: {<ticker>: "<GICS sector>", ...} }`.
+   `held_sectors` maps every CURRENT holding to its GICS sector (from the position
+   records/memory) — the workflow fails fast without it, and enforces the C1 cap
+   deterministically: a would-be 3rd position in a sector fails regardless of R:R;
+   a 2nd-in-sector passes with a soft flag that MUST appear in the report. Name any
+   sector-blocked candidate in the rejects table (user-confirmed D1).
    Pipeline (2026-07-23): screen a pool → **one deterministic `loops/technicals.py`
    prefilter pass over the whole pool** (falling-knife, aged-support anchor,
    **R:R ≥ 3:1 at Target 1 from REAL levels**, ≥300k avg volume, price $5–50, and the
    full deterministic sizing check) → web-gate the technical survivors only (FCF+,
    dated catalyst ≤60 days, allowed sector, and the numeric declining-revenue/moat
    rule) → stop at the first full pass or `MAX_CANDIDATES = 5` survivors gated.
-   **P2 breakout mode runs in SHADOW only:** `SHADOW-BREAKOUT` lines get logged to
-   `logs/research_loop.txt` for review — they are NOT approvals, never produce a
-   report or handoff, and never reach the approval gate.
+   **P2 breakout mode is RETIRED (2026-08-12)** — full-population replay showed no
+   edge (20% hit rate ≈ breakeven; motivating escapes were gaps, not breakouts).
+   No shadow logging exists. `loops/breakout_replay.py` is retained as the harness
+   for evaluating any future entry-pattern idea; a gap-continuation redesign is
+   PARKED until the October 29 review — do not spec or build it before then.
 
 4. **If the workflow returns `approved: null`** → present the "no qualifying candidate"
    summary (every evaluated ticker + the gate each failed), then **STOP**. There is no
    trade to approve, so no approval gate is needed.
 
 5. **If a candidate is approved** → using the workflow's `dossier`, the REAL technicals
-   levels (`approved.entry/stop/t1`), and the step-2 live balance, write:
+   levels (`approved.entry/stop/t1`), and the step-2 live balance, write —
+   including in section 6 the C3 insider-BUYING line (buys/buyers/$ total, trailing
+   90d, with the data note) alongside any selling observations, and the C1 sector
+   soft flag prominently if the candidate is a 2nd-in-sector:
    - the **full 9-section equity report** in the exact `trading-rules.md` format, and
    - the **proposed OCO order cells**: `BUY <N>` → `OCO { SELL LIMIT <T1>, SELL STOP <stop> }`,
      GTC, "1st Triggers OCO", with the shares/capital/cash/R:R table, sized against the

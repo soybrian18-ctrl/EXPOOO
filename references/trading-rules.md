@@ -38,6 +38,8 @@ Entry gates (added 2026-07-23 from the live track record — binding):
 
 - Liquidity minimum: 300,000 shares average daily volume (30-day average)
 
+- Sector concentration limit (added 2026-08-12 after the consumer-discretionary sweep stopped out two of three positions in 16 minutes): no more than two open positions may share a GICS sector. A candidate that would create a third position in a sector already holding two fails the entry gate regardless of reward-to-risk. A candidate creating a second position in a sector passes but must be flagged in the report.
+
 Prediction Market Account:
 
 - Treat as completely separate from equity account

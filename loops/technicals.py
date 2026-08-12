@@ -16,9 +16,12 @@ Gate lineage (each rule traces to a live incident):
     window-min formula from inflating risk-per-share on healthy names.
   * 2026-07-23 P3: avg_volume_30d emitted so the orchestrator can enforce the
     300k-share liquidity floor deterministically.
-  * 2026-07-23 P2 (SHADOW ONLY): breakout-regime fields (breakout_*) are
-    computed and reported for shadow logging. They MUST NOT feed the live
-    approval path until the user promotes them after reviewing shadow results.
+  * 2026-08-12 P2 RETIRED: the breakout regime was retired after a full-
+    population replay (loops/breakout_replay.py) showed a 20% hit rate against
+    ~20% breakeven, with all positive R from 2 of 10 closed trades, and none of
+    the motivating escapes (AR/IAG/DBX/RRC) being base-and-confirm breakouts.
+    The breakout_* fields below are retained SOLELY for the replay harness and
+    future entry-pattern research -- they MUST NOT feed any live approval path.
 
 Usage:  python loops/technicals.py TICKER [TICKER ...]   (prints JSON to stdout)
 

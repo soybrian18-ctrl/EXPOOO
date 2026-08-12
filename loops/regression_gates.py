@@ -112,6 +112,63 @@ def new_verdict(levels: dict, bal: dict) -> tuple[str, str]:
     return "APPROVE", f"rr={rr} stop={levels['suggested_stop']} shares={buyable}"
 
 
+# ---------------------------------------------------------------------------
+# C1 sector-cap regression (2026-08-12). Replays every historical APPROVAL
+# against the sector rule using holdings-as-of-date. Python replica of the
+# workflow's normalizeSector (research_workflow.js is authoritative).
+# ---------------------------------------------------------------------------
+GICS = ["Energy", "Materials", "Industrials", "Consumer Discretionary",
+        "Consumer Staples", "Health Care", "Financials", "Information Technology",
+        "Communication Services", "Utilities", "Real Estate"]
+
+# (date, candidate, candidate_sector, holdings {ticker: sector}, expected, note)
+SECTOR_REGRESSION = [
+    ("2026-06-15", "COLL", "Health Care",
+     {"CXM": "Information Technology", "MGNI": "Communication Services", "WWW": "Consumer Discretionary"},
+     "PASS", "1st Health Care position"),
+    ("2026-06-18", "TENB", "Information Technology",
+     {"CXM": "Information Technology", "WWW": "Consumer Discretionary", "COLL": "Health Care"},
+     "PASS+FLAG", "2nd Information Technology (CXM) -> soft flag, passes"),
+    ("2026-07-29", "FRO", "Energy",
+     {"WWW": "Consumer Discretionary"},
+     "PASS", "1st Energy position"),
+    ("2026-07-30", "S", "Information Technology",
+     {"WWW": "Consumer Discretionary", "FRO": "Energy"},
+     "PASS", "1st Information Technology position at that date"),
+    ("2026-07-31", "AEO", "Consumer Discretionary",
+     {"WWW": "Consumer Discretionary", "FRO": "Energy"},
+     "PASS+FLAG", "2nd Consumer Discretionary (WWW) -> soft flag, passes -- "
+                  "this is the flag the user would have seen before the 8/12 sweep"),
+    ("2026-08-11", "CCL", "Consumer Discretionary",
+     {"WWW": "Consumer Discretionary", "AEO": "Consumer Discretionary"},
+     "FAIL-INTENDED", "INTENDED BEHAVIOR CHANGE, documented per user 2026-08-12: "
+                      "under the new C1 rule this approval FAILS (3rd Consumer "
+                      "Discretionary alongside WWW+AEO). JUSTIFICATION: on "
+                      "2026-08-12, one consumer-discretionary macro move stopped "
+                      "out WWW (10:50 ET) and AEO (10:34 ET) within 16 minutes and "
+                      "put CCL within 3% of its stop the same session -- the "
+                      "concentration this rule now caps produced a correlated "
+                      "3-position drawdown the day after the approval."),
+]
+
+
+def run_sector_regression() -> bool:
+    print("\nC1 SECTOR-CAP REGRESSION (holdings-as-of-date replay of every historical approval):")
+    ok = True
+    for date, tkr, sector, holdings, expected, note in SECTOR_REGRESSION:
+        counts: dict = {}
+        for sec in holdings.values():
+            counts[sec] = counts.get(sec, 0) + 1
+        held = counts.get(sector, 0)
+        actual = "FAIL-INTENDED" if held >= 2 else ("PASS+FLAG" if held == 1 else "PASS")
+        match = actual == expected
+        ok = ok and match
+        print(f"  {date} {tkr:5} [{sector[:22]:22}] held-in-sector={held} -> {actual:12} "
+              f"expected={expected:12} {'MATCH' if match else 'MISMATCH'}")
+        print(f"    {note}")
+    return ok
+
+
 def main() -> int:
     from config import build_client, load_settings
     client = build_client(load_settings())
@@ -153,7 +210,9 @@ def main() -> int:
     print(f"SOFT FLIPS (behavior changes for user review): {len(flips)}")
     for f in flips:
         print(f"  FLIP {f[0]} {f[1]}: {f[2]} -> {f[3]} ({f[4]})")
-    return 1 if hard_fail else 0
+    sector_ok = run_sector_regression()
+    print(f"\nSECTOR REGRESSION: {'ALL ROWS MATCH EXPECTATIONS (CCL flip is the documented intended change)' if sector_ok else 'MISMATCH -- investigate'}")
+    return 1 if (hard_fail or not sector_ok) else 0
 
 
 if __name__ == "__main__":
