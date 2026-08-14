@@ -31,7 +31,9 @@ Niche-specific fourth surface (the hero):
 | Masonry | yard sign | truck decal or banner |
 
 Note: on a med spa treatment menu, keep prices off-frame. The no-price rule is about
-our $175, but a price-free menu also reads more premium.
+our $175, but a price-free menu also reads more premium. That is a menu-specific
+preference, not a blanket ban: client-side pricing may appear on promo and offer
+artwork, and our own price never appears anywhere.
 
 ## How to produce each surface convincingly
 
