@@ -83,7 +83,8 @@ Covered:
 - Before and after proof (Pillar 1). Reel 49, your best ad already exists and presented proof wins bigger jobs, covers the before and after proof rotation topic.
 - Competitive position (Pillar 1). Reel 51, you did not lose to a better company, you lost to a bigger-looking one. Covers looking established against larger competitors. The mechanism is which business looks safer to hire, distinct from pricing power (what you charge) and pre-sold trust (how the conversation goes).
 
+- Social proof placement (Pillar 3). Reel 53, five-star reviews nobody on your profile can see, covers the reviews and social proof rotation topic as a checklist of three placements: a highlight, a feed post, and the pinned top row.
+
 Future Pillar 1 and Pillar 3 reels should move to new topics. Suggested rotation:
-- Why reviews and social proof need a visual home on the profile
 - How inconsistent posting frequency signals an unreliable business
 - The difference between a logo and a brand identity

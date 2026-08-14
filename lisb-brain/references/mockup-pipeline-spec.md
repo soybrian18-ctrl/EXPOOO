@@ -26,7 +26,7 @@ Niche-specific fourth surface (the hero):
 | Auto detailing | shop banner or window | vehicle door decal or magnet |
 | Med spa | reception sign or window lettering | treatment menu card or product label |
 | Landscaping or hardscaping | yard sign | truck door decal or polo embroidery |
-| Boutique fitness or pilates (Apex) | studio window or wall | water bottle, tote, or schedule card |
+| Boutique fitness or pilates (Eastlight) | studio window or wall | water bottle, tote, or schedule card |
 | Wedding or portrait photo | A-frame or booth sign | welcome guide cover or print box |
 | Masonry | yard sign | truck decal or banner |
 
