@@ -30,6 +30,41 @@ Warm lead follow-up maps fitness and pilates prospects to Eastlight Pilates as t
 - Med spa and aesthetic content can use a warm dark background for editorial register.
 - Brand reveals show the design itself as the full visual with no text overlay on the first frame.
 
+## Reel Thumbnails
+The reel cover is chosen separately from frame one. The cover serves the profile
+visitor browsing the grid, frame one serves the scroller, so a reveal keeps its
+no-text-overlay opening and still carries a branded cover.
+
+Fixed signature, identical on every cover, no exceptions:
+- A gold hairline the full width with the LISB mark centered directly below it,
+  locked to the same position and size every time.
+- The same outer margin every time.
+- Only Cormorant Garamond for the hook and DM Sans small caps for the kicker.
+- Navy, white, and gold only. Client color never enters our framing.
+
+Variable zone above the hairline:
+- Ground. Navy by default, gold on every third reel per the grid rhythm above,
+  warm dark for aesthetic niches.
+- Kicker. DM Sans small caps, wide tracking. Names the value in owner language,
+  never internal pillar terms.
+- Hook. Cormorant Garamond, three to six words, maximum two lines, a compressed
+  version of the reel's own hook.
+
+Per pillar:
+- Branding Tips: kicker BRAND TIP with a running number, which implies a series
+  and drives follows.
+- Brand Equity: kicker names the stake in owner terms, for example WHAT IT COSTS YOU.
+- Business Mindset: no kicker, type only, the most whitespace.
+- Brand Reveals: client mark or hero surface fills the frame, kicker is the brand
+  name and niche, no hook line. The hairline and mark keep it in the system.
+- The Rebuild: kicker THE REBUILD, ground stays navy every week.
+
+Legibility:
+- Keep the kicker, hook, hairline, and mark inside the central safe area, since grid
+  crops change and the sides are lost first.
+- High contrast only. White on navy, navy on gold. Never gold text on navy at small size.
+- On busy reveal covers, the hairline and mark sit on a solid navy band.
+
 ## Slide Dimensions
 1080 by 1920 pixels. Vertical format. All assets built to this spec.
 

@@ -7,6 +7,11 @@ only, ready to finalize once Brian picks a voice from samples.
 
 # PART 1: The thumbnail formula
 
+PROMOTED. The operative rules now live in the Reel Thumbnails section of
+.claude/rules/brand-system.md, which is authoritative. This part is kept as the
+reasoning behind them. If the two ever disagree, brand-system.md wins and this
+section should be corrected to match.
+
 ## What a thumbnail is for here
 The cover image is what a profile visitor sees in the grid, which is the exact
 audience we are failing to convert. Strong reach with weak follower conversion means
