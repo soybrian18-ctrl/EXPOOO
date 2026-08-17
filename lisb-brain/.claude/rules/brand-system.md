@@ -17,7 +17,7 @@
 - Ellis Skin Studio. Med spa. Porcelain #F5F3EF, eucalyptus sage #A8B5A0, slate gray #4A4F54. Lowercase geometric sans wordmark with wide tracking, clinical-minimal skincare style.
 - Garrison Detail Co. Auto detailing. Bone #EDE6D6, oxblood #5C1F1B, charcoal #2B2B2B. Monogram G in an automotive badge over a condensed grotesque wordmark, heritage motor-club style.
 - Alder & Stone Landscape. Landscaping. Deep olive #4A5240, limestone #D8D3C8, iron black #1E1E1C. Monoline wordmark with an elongated ampersand, landscape-architecture minimalism.
-- Eastlight Pilates. Boutique fitness and pilates. Clay terracotta #B26E4B, warm sand #E8DCCB, black olive #31322C. Warm humanist sans wordmark with a rising horizon-line mark, warm-minimal wellness style.
+- Eastlight Pilates. Boutique fitness and pilates. Black olive #31322C leading, clay terracotta #B26E4B accent, warm sand #E8DCCB sparing. Spring-as-horizon mark: one horizontal coiled-spring line drawn as hardware, hook terminals and visible tension, that still reads as a horizon at small size. Weighted confident wordmark set large with a spring-informed terminal on the E, humanist warmth in support type only, no thin spa serif. Every application carries at least one discipline signal, apparatus imagery or the spring mark. Full direction in references/niche-recognition-standard.md.
 - Marlowe Photography. Wedding and portrait photography. Ivory #F7F4EE, dove gray #B9B5AE, true black #111111. High-contrast serif wordmark with an M ligature monogram for print embossing, editorial stationery style.
 
 All anchor brands are fictional portfolio concepts and are never presented as real clients.
@@ -113,12 +113,16 @@ photography.
 
 Boutique fitness and pilates. Default now: two defaults, the black-plus-neon
 bootcamp look, and increasingly the warm beige minimalism most premium pilates
-studios adopted together. Distinctive now: warm minimalism that carries a real
-identifying mark and a deeper, less beige-centered palette.
-Eastlight verdict: the one direction at genuine saturation risk. Warm minimalism
-is the current pilates default center. Keep the direction but anchor it: black
-olive leads, terracotta is the accent not the field, the rising horizon-line
-mark and the type character do the identifying, and never beige-first layouts.
+studios adopted together. Distinctive now: one inverted category default (color,
+darkness, type weight, voice) over a secure apparatus floor, because recognition
+comes from the machine and the method, never from palette.
+Eastlight verdict: superseded after the built pieces failed the reads-as-pilates
+test. The original direction was mood language with no discipline atoms, so
+recognition fell to the name alone. Corrected ruling, full detail in
+references/niche-recognition-standard.md: spring-as-horizon mark, apparatus
+imagery mandatory in every application, weighted wordmark, palette unchanged as
+positioning only. Saturation guidance still holds: black olive leads, terracotta
+is the accent not the field, never beige-first layouts.
 
 Wedding and portrait photography. Default now: script logo plus the word
 Photography, blush and gold, hairline serif website templates. Distinctive now:
