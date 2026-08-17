@@ -85,6 +85,12 @@ Covered:
 
 - Social proof placement (Pillar 3). Reel 53, five-star reviews nobody on your profile can see, covers the reviews and social proof rotation topic as a checklist of three placements: a highlight, a feed post, and the pinned top row.
 
+- Inconsistent posting (Pillar 1). Reel 54, six weeks since your last post, covers the rotation topic through the customer perception mechanism, a quiet feed reads as an unreliable business, distinct from Reel 42's owner-mindset compounding angle.
+- Logo versus brand identity (Pillar 3). Reel 55, your logo is not your brand, covers the rotation topic using the Viral Hook Framework's proven curiosity-gap hook.
+- Post-DM brand surfaces (Pillar 3). Reel 56, the quote, the email it arrives from, and the truck. First off-profile Tips entry. Do not fold these surfaces back into profile checklists.
+- Brand as an employee (Pillar 5). Reel 57, staff not decoration. Mindset reframe of what the brand is. Brushes Reel 47's pre-sold trust from a different pillar and register, so do not schedule adjacent to 47.
+
 Future Pillar 1 and Pillar 3 reels should move to new topics. Suggested rotation:
-- How inconsistent posting frequency signals an unreliable business
-- The difference between a logo and a brand identity
+- How to shoot job photos that sell the work (Pillar 3 capture checklist; complements Reel 49, which covers presentation of proof, not capture)
+- The Google cross-check: what customers see when they verify you off Instagram (Pillar 1; the discovery verification moment, distinct from Reel 56's post-inquiry surfaces)
+- What to post in a slow week (Pillar 3; keeping the feed steady, the supply side of Reel 54's steady-feed mechanism)
