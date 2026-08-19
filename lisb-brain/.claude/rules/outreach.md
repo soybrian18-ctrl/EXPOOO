@@ -20,7 +20,7 @@ Third sentence: the offer. Keep it short. Logos, flyers, social templates, fully
 Closing line: a soft question that invites a reply. Vary it every time. Options include: 'Want to see what we'd put together for you?', 'Want to see a sample for your niche?', 'Want to see what we'd build for a practice like yours?', 'Curious what this would look like for your business?'
 
 Hard rules:
-- Under 75 words total
+- Under 60 words total
 - Never use the same closing line twice in a row
 - Never use the phrase 'doesn't communicate that level yet' or any variation
 - No formal language. Write like a person texting, not a consultant emailing.
