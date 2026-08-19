@@ -150,6 +150,67 @@ promo card, or a schedule graphic.
    contained zero discipline atoms. That entry is superseded by this document once
    the rewrite above is approved.
 
+## Med spa: the recognition boundary (researched, second pass)
+Med spa sits between two neighbors and must read as neither: the day spa
+(relaxation, pampering) and the dermatology office (insurance-clinical). The
+category's own literature names the bridge explicitly: medical-grade credibility
+carried with luxury warmth. Lean soft and it files as a day spa. Lean sterile and
+it files as a doctor's office.
+
+The pilates law holds here with one twist. Recognition is still carried by
+imagery, practitioner, and vocabulary, never by palette. But where pilates has one
+unmistakable machine, med spa recognition is carried by PROOF AND PRACTICE:
+- Labeled before-and-after pairs are the category's proof currency, presented as
+  a consistent system (same lighting, same angles, treatment and timeframe
+  labeled). Real and consistent beats too-perfect; inconsistent presentation
+  reads fake even when real.
+- The practitioner in clinical context: a credentialed injector who reads
+  competent, warm, and real. The person is a recognition signal.
+- Treatment and process cues: treatment room, devices, gloved hands, prep and
+  sterilization behind-the-scenes. Process content signals medical legitimacy.
+- Treatment vocabulary on the surface: injectables, filler, laser, microneedling,
+  consult. Menu language that is medical, not pamper language.
+- Exclusion signals, the day-spa kit that misfiles the brand: lotus, stones,
+  candles, flowing water, incense, massage imagery, meditation gestures. Stock
+  libraries group med spas with yoga and massage, which is exactly why the
+  botanical-beige kit carries zero medical information.
+- In the MARK, the literal clichés invert: no syringe, no medical cross, no lotus.
+  Clinical content belongs in imagery and vocabulary; the mark stays a distilled,
+  editorial form.
+
+Med spa ceiling, from the premium tier: demystification as voice (Ever/Body,
+designed by Cactus: transparent menus, plain-language education, modern clinical
+studios with pale greens and warm earth); environment as brand (designed
+treatment-room concepts photographed as campaign assets); the before-and-after
+presented as a branded, labeled editorial system rather than raw phone pairs;
+real-skin macro photography with visible texture instead of retouched stock
+faces; one distilled signature form in the mark. Skin Works Medical Spa (Shiraz
+and Daryan) shows the full-system route including treatment-room graphics.
+SkinSpirit and Ever/Body validate the clinic-and-spa hybrid register at scale.
+
+## Ellis: audit against the boundary (amendment pending approval, not a rewrite)
+Ellis is not an Eastlight-class failure. The register is validated: clinical-cool
+porcelain and slate with sage demoted to minor accent matches the premium
+modern-clinical code (the Ever/Body tier), correctly positioned against the
+sage-blush-gold Instagram med spa default. Palette and type survive. The gaps:
+- The locked entry names zero discipline atoms. Clinical-minimal skincare style
+  could be a skincare product line, a dental studio, or an architecture firm.
+  Same structural flaw Eastlight had, caught before the build this time.
+- Imagery mandate to add: every Ellis application carries at least one med spa
+  signal. A labeled before-and-after pair in the branded frame system, a
+  treatment-room or device detail, a practitioner in clinical context, or
+  real-skin macro texture. Never lotus, stones, candles, or water.
+- Place, not product: Ellis Skin Studio must read as a place where treatment
+  happens, not a skincare line. Treatment-room and practitioner content is what
+  draws that line.
+- Vocabulary: menu and caption language stays medical and plain (consult,
+  treatment plan, skin health), demystifying rather than pampering.
+- Optional ceiling move for the mark: one distilled signature detail, for example
+  a precision period after the wordmark in the clinical-note register. No literal
+  syringe, cross, or botanical.
+Gate for the build: cover the name. A stranger must say med spa or aesthetics
+clinic. If they say day spa, skincare brand, or dental office, it fails.
+
 ## Key named references
 Real studios: New York Pilates, SESSION Pilates (Dallas), Heartcore (London,
 Coreformer, Chapter Interiors build), Club Pilates, solidcore (Farrynheight, 2024),
@@ -167,3 +228,10 @@ Reforma, researched-reference palette).
 Discipline sources: Gratz Industries (classical apparatus, material lineage),
 FOLD/STUDIO reformers (apparatus as furniture), Save The Journey (pilates vs yoga
 photography comparison).
+Med spa pass: Ever/Body (brand and interiors by Cactus, SoHo flagship, zen-pod
+treatment rooms), SkinSpirit (clinic-and-spa hybrid at scale), Skin Works Medical
+Spa (Shiraz and Daryan full system with treatment-room graphics), Bethany Works
+and Tiffany Kenyon (med spa positioning guides naming the bridge), category
+boundary and cliche documentation (Altaire, The Dermatology Center, Visuable,
+Elevated Med Marketing, Pixels Mark), before-and-after authenticity and consent
+guidance (RxPhoto, InjectCo, MedSpa Standards).
