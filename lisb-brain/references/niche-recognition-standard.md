@@ -211,6 +211,59 @@ sage-blush-gold Instagram med spa default. Palette and type survive. The gaps:
 Gate for the build: cover the name. A stranger must say med spa or aesthetics
 clinic. If they say day spa, skincare brand, or dental office, it fails.
 
+## Boutique boxing: the recognition map (researched, third pass)
+The market splits into registers: the boutique nightclub tier (Rumble, KOBOX,
+Shadowbox, BoxUnion; KOBOX's own tagline "where fight club meets nightclub" names
+the convention), the luxury-materials pole (BXR London: raw concrete, bronze,
+braided cognac leather, made-to-measure gloves), the counterculture pole
+(Overthrow), the program-first franchise tier (TITLE, Mayweather: red/black,
+condensed caps, named formats), and the old-school lineage pole (Gleason's, Wild
+Card) where grit itself is the brand. Two findings frame everything: the
+nightclub register is now the crowded default and reads as boxing-flavored HIIT
+rather than boxing proper, and authenticity is always imported (a champion, a
+heritage building, a period-correct ring as artifact).
+
+Boxing floor (reads as boxing at all):
+- The laced leather glove, full mitt, hung or carried by its laces. Never a
+  fingerless velcro glove, which reads MMA instantly.
+- Ring geometry: parallel ropes under tension, corner post, turnbuckle, padded
+  corner. Even cropped to a detail, horizontal rope lines against canvas read
+  boxing.
+- Canvas as ground texture, the cotton-duck ring floor.
+- The heavy bag as hero object and the speed bag silhouette (near-exclusive to
+  boxing and instantly legible).
+- The wrap ritual: cotton wraps and tape around knuckles, the category's
+  signature pre-class photograph.
+- Round-based time language and the lexicon no other sport owns in English:
+  rounds, bell, corner, southpaw, jab, hook, weight classes.
+- Fight-bill typography: tall condensed grotesque caps in the wood-type lineage
+  (Knockout, Champion Gothic, whose widths are literally named after weight
+  classes), stacked billing hierarchy.
+- Fists-only imagery. No kicks, knees, clinch, or ground work anywhere.
+- Exclusion kit: no octagon, cage, chain-link, or fingerless gloves (MMA), no
+  skulls or tribal marks (the Tapout lineage), no bare feet or shin guards
+  (kickboxing), no neon LED rooms, barbells, or turf (bootcamp HIIT), no glove
+  clipart or clenched-fist marks (the commodity default).
+
+Boxing ceiling (distinctive once the floor is met):
+- Material honesty as the brand surface: waxed leather, canvas, twine-wrapped
+  rope, wood, brass, worn concrete. BXR and Shadowbox are described through
+  their materials, not their logos.
+- A type system instead of a logo glove: the fight-bill lineage used with modern
+  restraint, weight-class or round-based naming conventions deployed knowingly.
+- One boxing-exclusive object integrated into the mark with wit (Kronk's gloves
+  hanging from the O; ring-corner geometry as logomark in Continuous' World
+  Boxing identity) rather than illustrated beside it.
+- One ritual detail owned deeply: laces, the wrap, the corner stool, the bell.
+- An owned color beyond default red/black (Kronk's red and gold), or the
+  red-corner blue-corner convention used structurally, champion's red and
+  challenger's blue, a color story with real history.
+- A stated tone decision resolving the intimidation problem one way: strip the
+  roughness for newcomers (BASH, Gloveworx) or curate the rawness (Overthrow),
+  held consistently. Hospitality warmth over aggression.
+- Documentary photography with a position: available light, sweat, worn
+  equipment, lineage portraiture. Never stock aggressive-boxer imagery.
+
 ## Key named references
 Real studios: New York Pilates, SESSION Pilates (Dallas), Heartcore (London,
 Coreformer, Chapter Interiors build), Club Pilates, solidcore (Farrynheight, 2024),
@@ -235,3 +288,13 @@ and Tiffany Kenyon (med spa positioning guides naming the bridge), category
 boundary and cliche documentation (Altaire, The Dermatology Center, Visuable,
 Elevated Med Marketing, Pixels Mark), before-and-after authenticity and consent
 guidance (RxPhoto, InjectCo, MedSpa Standards).
+Boxing pass: Rumble, KOBOX, Shadowbox, BoxUnion (the boutique nightclub tier),
+BXR London (Bergman Design House luxury materials, Anthony Joshua), Overthrow
+Boxing Club (counterculture heritage), TITLE Boxing Club and Mayweather Boxing +
+Fitness (franchise tier), Gleason's and Wild Card (old-school lineage pole),
+Kronk Gym (red and gold, gloves hanging from the O), BASH Boxing by Grafik and
+Gloveworx (strip-the-roughness tone decisions), World Boxing Championships
+Liverpool 2025 by Continuous (ring-corner logomark, welcome to our corner),
+Knockout and Champion Gothic by Hoefler and Co. (the fight-bill type lineage with
+weight-class naming), Everlast, TITLE, and Ringside catalogs (the authentic
+object set).
