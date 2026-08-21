@@ -188,7 +188,7 @@ faces; one distilled signature form in the mark. Skin Works Medical Spa (Shiraz
 and Daryan) shows the full-system route including treatment-room graphics.
 SkinSpirit and Ever/Body validate the clinic-and-spa hybrid register at scale.
 
-## Ellis: audit against the boundary (amendment pending approval, not a rewrite)
+## Ellis: audit against the boundary (amendment approved and applied to brand-system.md)
 Ellis is not an Eastlight-class failure. The register is validated: clinical-cool
 porcelain and slate with sage demoted to minor accent matches the premium
 modern-clinical code (the Ever/Body tier), correctly positioned against the
