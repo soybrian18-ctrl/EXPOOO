@@ -28,6 +28,8 @@ approval gate at the end is NON-NEGOTIABLE.
    sector-blocked candidate in the rejects table (user-confirmed D1).
    Pipeline (2026-07-23): screen a pool → **one deterministic `loops/technicals.py`
    prefilter pass over the whole pool** (falling-knife, aged-support anchor,
+   **C4 ATR floor: risk/share ≥ 0.6 × ATR14** (2026-08-21 — a tighter stop is
+   inside session noise and its R:R is fake; KEY/DVN/PFE),
    **R:R ≥ 3:1 at Target 1 from REAL levels**, ≥300k avg volume, price $5–50, and the
    full deterministic sizing check) → web-gate the technical survivors only (FCF+,
    dated catalyst ≤60 days, allowed sector, and the numeric declining-revenue/moat

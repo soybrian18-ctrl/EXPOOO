@@ -109,6 +109,11 @@ const PREFILTER_SCHEMA = {
           last: { type: 'number' },
           suggested_stop: { type: 'number' },
           risk_per_share: { type: 'number' },
+          // C4 (2026-08-21): ATR stop-distance floor -- technicals.py judges
+          // (atr_floor_ok computed on unrounded values), the orchestrator
+          // rejects on the boolean with the multiple surfaced in the label.
+          stop_atr_multiple: { type: ['number', 'null'] },
+          atr_floor_ok: { type: 'boolean' },
           nearest_resistance_40d: { type: 'number' },
           rr_to_resistance: { type: ['number', 'null'] },
           valid_setup: { type: 'boolean' },
@@ -194,6 +199,9 @@ function technicalFails(r) {
   const fails = []
   if (r.error) { fails.push(`data_error(${String(r.error).slice(0, 40)})`); return fails }
   if (r.falling_knife) fails.push('falling_knife_fresh_40d_low')
+  // C4 (2026-08-21): a stop tighter than 0.6 x ATR14 is inside session noise
+  // and its R:R is fake (KEY 8/19 at 0.498 broke in 2 sessions; DVN/PFE).
+  if (r.atr_floor_ok === false) fails.push(`stop_below_atr_floor(${r.stop_atr_multiple})`)
   if (r.valid_setup === false) fails.push('invalid_technical_setup')
   if (!(r.last >= LOOP_CONFIG.PRICE_MIN && r.last <= LOOP_CONFIG.PRICE_MAX)) fails.push('price_band')
   if (r.rr_to_resistance == null || r.rr_to_resistance < LOOP_CONFIG.MIN_RR) fails.push(`rr_below_3to1(${r.rr_to_resistance})`)
@@ -226,8 +234,8 @@ const pre = pool.length === 0 ? { results: [] } : await agent(
   `Run this EXACT command via Bash (single call, all tickers at once):\n` +
   `  .venv/bin/python loops/technicals.py ${pool.join(' ')}\n` +
   `Copy each ticker's JSON fields VERBATIM into the schema (ticker, error, last, suggested_stop, ` +
-  `risk_per_share, nearest_resistance_40d, rr_to_resistance, valid_setup, falling_knife, ` +
-  `avg_volume_30d, support_anchor, support_floor). ` +
+  `risk_per_share, stop_atr_multiple, atr_floor_ok, nearest_resistance_40d, rr_to_resistance, ` +
+  `valid_setup, falling_knife, avg_volume_30d, support_anchor, support_floor). ` +
   `Do NOT invent or adjust numbers -- this is non-negotiable.\n\n` +
   `Finally log the batch summary:\n` +
   `  .venv/bin/python loops/research_log.py log PREFILTER "pool=${pool.length} tickers=${pool.join(',')}"`,

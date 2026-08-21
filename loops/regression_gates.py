@@ -27,24 +27,40 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from technicals import MIN_AVG_VOLUME, MIN_RR, compute_levels  # noqa: E402
+from technicals import ATR_FLOOR_MULT, MIN_AVG_VOLUME, MIN_RR, compute_levels  # noqa: E402
 
 FETCH_DAYS = 420
 
 # Balance args as recorded at each evaluation date (from session logs).
+# Rows added 2026-08-21 (C4 expansion) are reconstructed from same-day EOD
+# snapshots in logs/portfolio_history.txt, net of the entry itself when the
+# fill landed before the snapshot (decision-time intraday balances were not
+# logged for these dates). All five added approvals are $200-position-cap
+# bound (5/11/11/7/4 shares), so their sizing verdicts are insensitive to
+# intraday balance drift.
 BALANCES = {
     "2026-06-15": {"budget": 13.84, "headroom": 243.04},
     "2026-06-18": {"budget": 13.61, "headroom": 202.01},
     "2026-07-01": {"budget": 14.17, "headroom": 219.94},
     "2026-07-03": {"budget": 14.34, "headroom": 217.46},
     "2026-07-23": {"budget": 14.70, "headroom": 403.95},
+    "2026-07-29": {"budget": 14.95, "headroom": 400.21},  # NL 747.70, pre-FRO deploy 123.18
+    "2026-07-30": {"budget": 14.94, "headroom": 207.45},  # NL 746.90, deploy 315.38 (S never filled)
+    "2026-07-31": {"budget": 14.94, "headroom": 207.45},  # 7/30 EOD proxy (7/31 snapshot is post-AEO-fill)
+    "2026-08-11": {"budget": 14.63, "headroom": 211.45},  # NL 731.54, deploy net of CCL fill ~300.63
+    "2026-08-14": {"budget": 14.51, "headroom": 310.92},  # NL 725.37 (live-recorded), deploy net of ASO ~196.84
 }
 
 # (as_of, ticker, recorded verdict, hard-contract, recorded detail)
 # APPROVE rows replay at the RECORDED DECISION PRICE (the live quote the call
 # was actually made at), not the day's close -- the gate ran intraday, and a
 # close-based replay would judge a different decision than the one taken.
-ENTRY_OVERRIDES = {("2026-06-15", "COLL"): 34.20, ("2026-06-18", "TENB"): 26.57}
+ENTRY_OVERRIDES = {
+    ("2026-06-15", "COLL"): 34.20, ("2026-06-18", "TENB"): 26.57,
+    ("2026-07-29", "FRO"): 38.60, ("2026-07-30", "S"): 17.90,
+    ("2026-07-31", "AEO"): 17.18, ("2026-08-11", "CCL"): 27.70,
+    ("2026-08-14", "ASO"): 48.05,
+}
 
 EXPECTATIONS = [
     ("2026-06-15", "COLL", "APPROVE", True,  "3R winner entry: stop 32.80, T1 38.40, 3.0:1"),
@@ -70,7 +86,60 @@ EXPECTATIONS = [
     ("2026-07-23", "DBX",  "REJECT",  False, "valid setup, rr 0.93"),
     ("2026-07-23", "AR",   "REJECT",  False, "valid setup, rr 0.82 (watch)"),
     ("2026-07-23", "RRC",  "REJECT",  False, "valid setup, rr 0.40 (watch)"),
+    # --- C4 expansion (2026-08-21): every post-7/23 approval becomes a HARD
+    # no-flip row. Stops sat at 0.70-0.95 x ATR14 -- these rows are the reason
+    # the C4 floor is 0.6 and not higher (a 1.0 floor would flip all five plus
+    # TENB at 0.877; the -1R stop-outs among them are expected behavior in a
+    # 3:1 system, per the P1 AR precedent).
+    ("2026-07-29", "FRO",  "APPROVE", True,  "approved entry 38.60; stop 0.909 x ATR; stopped 8/11 -1R"),
+    ("2026-07-30", "S",    "APPROVE", True,  "approved entry 17.90; stop 0.949 x ATR; expired unfilled"),
+    ("2026-07-31", "AEO",  "APPROVE", True,  "approved entry 17.18; stop 0.874 x ATR; stopped 8/12 -1R"),
+    ("2026-08-11", "CCL",  "APPROVE", True,  "approved entry 27.70; stop 0.702 x ATR; stopped 8/19 -1R "
+                                             "(technical gates only -- C1 retro-fails this row on sector, "
+                                             "see SECTOR_REGRESSION)"),
+    ("2026-08-14", "ASO",  "APPROVE", True,  "approved entry 48.05; stop 0.897 x ATR; stopped 8/17 -1R"),
 ]
+
+# ---------------------------------------------------------------------------
+# C4 RECORDED_ROWS (2026-08-21): decision-time contracts asserted on LOGGED
+# LIVE INPUTS instead of candle replay. WHY THIS ROW CANNOT BE CANDLE-REPLAYED
+# (documented per the CCL FAIL-INTENDED standard): the KEY gate call ran live
+# at ~12:30 ET on 2026-08-19 against a snapshot containing the PARTIAL 8/19
+# daily candle. The 22.05 shelf it anchored on existed only in that snapshot:
+#   * truncating as-of 8/18 close, the nearest aged shelf is 22.49/22.59 --
+#     ABOVE the 22.265 decision price (intraday 8/19 selling had already
+#     undercut it), so the replay yields stop>entry, a different setup;
+#   * truncating as-of 8/19 close, the afternoon collapse has printed the
+#     fresh 40-session low -- falling_knife fires and the anchor moves to
+#     21.91 (risk 0.35 = 0.82 x ATR), again a different decision.
+# Neither truncation reproduces the decision actually faced. That gap is the
+# point of C4: the knife gate only saw KEY at the close, hours after a
+# morning approval would have filled; the ATR floor is the decision-time
+# defense. Inputs below are copied from the 8/19 live workflow prefilter log.
+# (as_of, ticker, {inputs}, expected fail label, note)
+RECORDED_ROWS = [
+    ("2026-08-19", "KEY",
+     {"entry": 22.265, "stop": 22.05, "risk_per_share": 0.215, "atr14": 0.432},
+     "stop_below_atr_floor",
+     "MOTIVATING ROW: live rr printed 8.40 off a 0.498-ATR stop; the shelf "
+     "broke within 2 sessions (21.82 by 8/21) -- same pattern as the pre-fix "
+     "DVN/PFE fake ratios (0.06-0.36 x ATR)."),
+]
+
+
+def run_recorded_rows() -> bool:
+    print("\nC4 RECORDED-INPUT REGRESSION (decision-time contracts, not candle-replayable -- see header):")
+    ok = True
+    for as_of, tkr, inp, expected, note in RECORDED_ROWS:
+        mult = inp["risk_per_share"] / inp["atr14"]
+        actual = "stop_below_atr_floor" if mult < ATR_FLOOR_MULT else "passes_floor"
+        match = actual == expected
+        ok = ok and match
+        print(f"  {as_of} {tkr:5} risk={inp['risk_per_share']} atr14={inp['atr14']} "
+              f"multiple={mult:.3f} floor={ATR_FLOOR_MULT} -> {actual} "
+              f"expected={expected} {'MATCH' if match else 'MISMATCH'}")
+        print(f"    {note}")
+    return ok
 
 
 def fetch_history(client, ticker: str):
@@ -99,6 +168,8 @@ def new_verdict(levels: dict, bal: dict) -> tuple[str, str]:
         return "REJECT", "falling_knife"
     if not levels["valid_setup"]:
         return "REJECT", f"invalid_setup:{(levels.get('rejected_reason') or '')[:34]}"
+    if levels.get("atr_floor_ok") is False:  # C4 (2026-08-21)
+        return "REJECT", f"stop_below_atr_floor({levels.get('stop_atr_multiple')})"
     rr = levels["rr_to_resistance"]
     if rr is None or rr < MIN_RR:
         return "REJECT", f"rr={rr}"
@@ -212,7 +283,9 @@ def main() -> int:
         print(f"  FLIP {f[0]} {f[1]}: {f[2]} -> {f[3]} ({f[4]})")
     sector_ok = run_sector_regression()
     print(f"\nSECTOR REGRESSION: {'ALL ROWS MATCH EXPECTATIONS (CCL flip is the documented intended change)' if sector_ok else 'MISMATCH -- investigate'}")
-    return 1 if (hard_fail or not sector_ok) else 0
+    recorded_ok = run_recorded_rows()
+    print(f"RECORDED ROWS: {'ALL MATCH' if recorded_ok else 'MISMATCH -- investigate'}")
+    return 1 if (hard_fail or not sector_ok or not recorded_ok) else 0
 
 
 if __name__ == "__main__":

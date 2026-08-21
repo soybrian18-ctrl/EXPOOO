@@ -40,6 +40,8 @@ Entry gates (added 2026-07-23 from the live track record — binding):
 
 - Sector concentration limit (added 2026-08-12 after the consumer-discretionary sweep stopped out two of three positions in 16 minutes): no more than two open positions may share a GICS sector. A candidate that would create a third position in a sector already holding two fails the entry gate regardless of reward-to-risk. A candidate creating a second position in a sector passes but must be flagged in the report.
 
+- Minimum stop distance: the risk per share implied by the technically anchored stop must be at least 0.6 × ATR(14). A tighter stop sits inside ordinary session noise and produces inflated reward-to-risk arithmetic (added 2026-08-21 after KEY; pattern also seen on DVN and PFE).
+
 Prediction Market Account:
 
 - Treat as completely separate from equity account

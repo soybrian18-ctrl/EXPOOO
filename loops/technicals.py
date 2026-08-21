@@ -22,6 +22,21 @@ Gate lineage (each rule traces to a live incident):
     the motivating escapes (AR/IAG/DBX/RRC) being base-and-confirm breakouts.
     The breakout_* fields below are retained SOLELY for the replay harness and
     future entry-pattern research -- they MUST NOT feed any live approval path.
+  * 2026-08-21 C4: ATR stop-distance floor -- risk_per_share must be >=
+    ATR_FLOOR_MULT (0.6) x ATR14 or the setup is rejected outright
+    (stop_below_atr_floor). A stop inside ~half an ATR sits inside ordinary
+    session noise and produces inflated R:R arithmetic: KEY 2026-08-19 passed
+    the shelf detector at 0.498 x ATR (rr printed 8.40) and the shelf broke
+    within 2 sessions; the pre-fix DVN/PFE fake ratios (20.4:1, 8.19:1) sat at
+    0.06-0.36 x ATR. Calibration: every historical approval's stop sat at
+    0.70-1.35 x ATR (TENB, a 3R winner, at 0.877 -- so the floor cannot be
+    1.0); the bad cluster tops out at 0.498 -> 0.6 splits them with ~0.10
+    margin each side. PURE REJECT by design: the considered alternative --
+    deepening the anchor to the next aged shelf until the floor is met -- was
+    REJECTED because it would have approved KEY at a ~21.6 stop (1.5 x ATR,
+    same 8 shares via the $200 cap) on a name that fell to 21.82 two sessions
+    later; widening a stop cannot fix a knife-adjacent setup, it just pays
+    more to lose. Revisit only if the reject rate proves costly.
 
 Usage:  python loops/technicals.py TICKER [TICKER ...]   (prints JSON to stdout)
 
@@ -43,6 +58,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 STOP_ATR_BUFFER = 0.2        # stop sits this many ATRs below the anchor's shelf floor
+ATR_FLOOR_MULT = 0.6         # C4: risk_per_share must be >= this many ATRs (else fake-R:R reject)
 SHELF_TOLERANCE_ATR = 0.25   # lows within this band of an anchor count as shelf touches
 PIVOT_WING = 2               # sessions each side for a swing-low pivot
 MIN_SUPPORT_AGE = 5          # anchor must be >= this many sessions old
@@ -154,6 +170,10 @@ def compute_levels(candles: list[dict], last: float) -> dict:
     risk = round(last - stop, 4)
     resistance = round(max(highs[-RESISTANCE_LOOKBACK:]), 2)
     rr = round((resistance - last) / risk, 3) if risk and risk > 0 else None
+    # C4: floor judged on unrounded values; consumers reject when atr_floor_ok
+    # is False (risk <= 0 also lands False and is caught by rr/setup anyway).
+    stop_atr_multiple = round(risk / atr, 3) if atr else None
+    atr_floor_ok = bool(atr and risk is not None and risk >= ATR_FLOOR_MULT * atr)
 
     # --- P2 breakout regime (SHADOW ONLY -- never feeds the live approval) ---
     ref_high = round(max(highs[-KNIFE_LOOKBACK:-MIN_SUPPORT_AGE]), 2)
@@ -183,6 +203,8 @@ def compute_levels(candles: list[dict], last: float) -> dict:
         "rejected_reason": rejected_reason,
         "suggested_stop": stop,
         "risk_per_share": risk,
+        "stop_atr_multiple": stop_atr_multiple,
+        "atr_floor_ok": atr_floor_ok,
         "nearest_resistance_40d": resistance,
         "rr_to_resistance": rr,
         "min_t1_for_3to1": round(last + MIN_RR * risk, 2) if risk and risk > 0 else None,
