@@ -161,9 +161,12 @@ def main() -> int:
         size_after = hist_path.stat().st_size if hist_path.exists() else 0
         tail = ""
         try:
-            with open(hist_path, "r", encoding="utf-8") as handle:
+            # Binary read: the seek offset is in bytes and can land mid-way
+            # through a multi-byte UTF-8 character (box-drawing output), so a
+            # text-mode read here can raise UnicodeDecodeError.
+            with open(hist_path, "rb") as handle:
                 handle.seek(max(0, size_after - len(block.encode("utf-8")) - 256))
-                tail = handle.read()
+                tail = handle.read().decode("utf-8", errors="replace")
         except OSError:
             tail = ""
         verified = hist_path.exists() and size_after > size_before and footer in tail
