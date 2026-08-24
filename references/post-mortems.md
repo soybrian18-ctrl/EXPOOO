@@ -36,3 +36,36 @@ explicitly noted by the user. Do not build anything from this entry alone.
 calibration: approvals clustered 0.70-1.35, bad cluster ≤ 0.498); the S
 no-chase precedent (2026-07-30/31); KEY (0.498, shelf broke in 2 sessions)
 and HBAN (0.538, C4's first live catch, 8/21) as the sub-floor cohort.
+
+**Datapoint 3 — KMI 2026-08-24 (near-boundary, resolved against entry BEFORE
+presentation; user has NOT yet ruled whether this counts as the third case):**
+the pipeline approved KMI on pre-market levels (31.17, risk 0.554, multiple
+**0.743**, rr 3.91, valid setup). Over the next 80 minutes: 08:48 pre-market
+31.05 → multiple **0.574** (C4 fail); 09:36 post-open 30.68 → **falling knife**
+(fresh 40-session low), risk 0.205, multiple **0.29**, fake rr 12.8 — rejected
+by three gates at once. Never presented; the post-open re-verify caught it.
+Distinct in kind from S and RF (which drifted away *after* a report was
+presented), but it is direct evidence for the same underlying hypothesis:
+setups near the floor are unstable, and their R:R inflates as they deteriorate.
+RF the same morning failed its re-qualification on the RATIO (rr 2.295 < 3:1,
+back above its 30.54 ceiling) while its stop was perfectly healthy at 1.537
+ATR — worth noting that a boundary case which *widens* out of the boundary
+band does so by getting a worse entry, not a better setup.
+
+---
+
+## PROC-1 — Never run the research pipeline pre-market (opened 2026-08-24)
+
+**Incident:** the 2026-08-24 run was launched at 08:14 ET, 76 minutes before
+the open, so `technicals.py` computed every deterministic level from
+pre-market quotes. KMI passed the full prefilter and the web gate on those
+levels and came back as an approved candidate. At the real open it was a
+falling knife with a 0.29 ATR multiple. Had the report been presented and
+approved on pre-market numbers, the position would have been a knife entry.
+
+**Rule (process, not a code gate):** launch `/equity-research` only AFTER
+09:30 ET. If a run is started earlier for any reason, re-run
+`loops/technicals.py` on every survivor after the open and re-apply the
+deterministic gates BEFORE presenting anything — pre-market levels are
+report-invalid. The pre-market → post-open delta on 8/24 was large enough to
+flip three separate gates on one name.
