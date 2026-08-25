@@ -80,6 +80,43 @@ survive to a later session, and note whether the multiple moved via the stop
 
 ---
 
+## OBS-3 — Boundary-band approvals decay through the ATR floor intraday, pre-presentation (opened 2026-08-25)
+
+**Distinct from OBS-1 and OBS-2.** OBS-1 measures candidates that were
+PRESENTED and then evaporated. OBS-3 measures candidates that never reached
+presentation: they cleared the prefilter in the 0.60-0.65 boundary band and
+fell through the C4 floor within the hour, caught only by the post-run
+re-verify. Two consecutive trading days, same signature:
+
+| Case | Approved at | Re-verified at | Multiple | R:R | Elapsed |
+|------|-------------|----------------|----------|-----|---------|
+| KMI 2026-08-24 | 31.17, risk 0.554 | 30.68, risk 0.205 | **0.743 → 0.29** | 3.91 → **12.8** | ~80 min (incl. pre-market; see PROC-1) |
+| HAL 2026-08-25 | 34.42, risk 0.550 | 34.19, risk 0.315 | **0.609 → 0.349** | 3.24 → **6.40** | **26 min, all regular-hours** |
+
+**The signature:** price drifts DOWN toward a fixed stop → risk/share shrinks →
+the ATR multiple falls through the floor → and the headline R:R *inflates*
+because the denominator is collapsing. In both cases the arithmetic ratio got
+more attractive precisely as the setup got worse. This is the same fake-ratio
+mechanism as DVN/PFE, but arriving through decay-in-place rather than a knife.
+
+**Note the symmetry with OBS-2:** OBS-2 is price moving AWAY from the stop
+(multiple rises, R:R collapses, ceiling breached); OBS-3 is price moving TOWARD
+the stop (multiple falls through the floor, R:R inflates). Both are the entry
+moving, not the structure changing. Neither direction is good news, and in both
+the R:R and the multiple move in OPPOSITE directions — which is exactly why
+neither number can be read alone.
+
+**Operational consequence (already in force):** the post-run re-verify is not
+optional for boundary-band names. PROC-1 mandates it for pre-market runs; OBS-3
+shows a 26-minute regular-hours gap was enough to flip HAL. **Re-verify every
+boundary-band survivor immediately before presenting, regardless of when the
+run started.**
+
+**Trigger for action:** a third case → spec raising ATR_FLOOR_MULT (0.6 → 0.65+)
+so the boundary band sits above the decay zone, and/or requiring a boundary-band
+candidate to be re-verified stable across two reads before it can be presented.
+Not before — two cases, tracked only.
+
 ## PROC-1 — Never run the research pipeline pre-market (opened 2026-08-24)
 
 **Incident:** the 2026-08-24 run was launched at 08:14 ET, 76 minutes before
