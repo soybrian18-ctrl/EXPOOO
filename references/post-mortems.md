@@ -117,6 +117,8 @@ so the boundary band sits above the decay zone, and/or requiring a boundary-band
 candidate to be re-verified stable across two reads before it can be presented.
 Not before — two cases, tracked only.
 
+---
+
 ## PROC-1 — Never run the research pipeline pre-market (opened 2026-08-24)
 
 **Incident:** the 2026-08-24 run was launched at 08:14 ET, 76 minutes before
