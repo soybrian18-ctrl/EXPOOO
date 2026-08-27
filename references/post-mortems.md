@@ -67,6 +67,16 @@ The multiple more than doubled purely because the ENTRY got worse — price rose
 away from a fixed stop. So a "healthier" stop distance was bought with exactly
 the thing that kills the trade: a compressed ratio and a breached ceiling.
 
+**Second case — TFC 2026-08-27 (same shape, 25 minutes):** screen 10:15 at
+49.95, stop 49.20, risk 0.75, multiple **0.898**, rr 5.70 → re-verify 10:40 at
+50.13, multiple **1.114**, rr 4.40 — and OUT of the $5-50 price band. The
+multiple "improved" 24% purely through entry drift; the trade died of the same
+drift. With KMI/HAL under OBS-3, **both directions of entry drift now have two
+documented cases each**: price toward the stop (multiple falls through the
+floor, R:R inflates — OBS-3) and price away from the stop (multiple rises,
+R:R compresses, band/ceiling breached — OBS-2). A moving multiple with an
+unmoved stop is entry drift, not setup change, in every observed case.
+
 **Why it matters:** a rising ATR multiple reads as improving quality and is
 not, on its own, evidence of a better setup. The multiple is a ratio with entry
 price in the numerator's path — it can be improved by deterioration in the
@@ -76,7 +86,7 @@ in isolation.
 
 **Tracking:** record the multiple AND the R:R for boundary candidates that
 survive to a later session, and note whether the multiple moved via the stop
-(structure changed) or via the entry (price ran). No action from one case.
+(structure changed) or via the entry (price ran). Two cases (RF 8/24, TFC 8/27), tracked only — no action.
 
 ---
 
