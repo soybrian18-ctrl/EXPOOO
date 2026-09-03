@@ -38,6 +38,14 @@ Calibration facts on hand: a 0.65 floor would have rejected RF (0.626) and KGC
 0.702 CCL, next 0.813 F); ceiling room on the three failures was 3¢/31¢/20¢
 (0.03/0.59/0.15 ATR) vs F's 35¢ (0.95 ATR) which filled instantly and worked.
 
+**Boundary-band tally (user-directed 2026-09-03, tracking only, NO threshold
+change):** boundary-band names (multiple 0.60-0.65 at screen) are **0-for-3 on
+producing a trade**: RF 8/21 (0.626) drifted through its ceiling unfilled,
+KGC 9/2 (0.632) drifted through its ceiling unfilled, HAL 8/25 (0.609) decayed
+through the C4 floor in 26 minutes pre-presentation. ATR_FLOOR_MULT stays 0.6
+— C4 was calibrated to reject fake ratios from noise-tight stops and does that
+job well; it is not to be overloaded with a second job (user ruling 9/3).
+
 **SCOPE — what counts, and what explicitly does not (user-directed 2026-08-24):**
 OBS-1 measures ONE failure mode: a candidate that **cleared every gate and was
 presented to the user**, then evaporated before it could be filled. A candidate
@@ -135,6 +143,49 @@ candidate to be re-verified stable across two reads before it can be presented.
 Not before — two cases, tracked only.
 
 ---
+
+## C5 STUDY (2026-09-03) — ceiling-room minimum gate: REJECTED BY THE DATA
+
+**Proposed rule (user-directed spec):** separate gate requiring ceiling room
+>= K x ATR14, where ceiling = (T1 + 3*stop)/4 and room = ceiling - entry.
+Contract: reject the three drift-aways (S 7/30, RF 8/21, KGC 9/2) while
+keeping F and every prior fill. ATR_FLOOR_MULT stays 0.6 regardless.
+
+**Finding: the contract is UNSATISFIABLE.** Decision-time room/ATR across the
+record (replay-verified rows + recorded live rows):
+
+  FILLS:  TENB 0.035 (+3R WINNER) - AEO 0.061 - FRO 0.123 - ASO 0.136 -
+          RF-8/25 0.162 - COLL 0.230 (+3R winner) - CCL 0.384 - F 0.955
+  DRIFTS: S 0.037 - KGC 0.180 - RF-8/21 0.598
+
+The classes fully interleave. Every K that rejects all 3 drifts (K >= 0.6)
+flips 7 of 8 fills including BOTH 3R winners; even K = 0.05 flips TENB.
+Root cause is algebraic, not empirical bad luck:
+
+  room = risk x (rr - 3) / 4   =>   room/ATR = stop_atr_multiple x (rr-3) / 4
+
+Ceiling room is not an independent dimension — it is a composite of the ATR
+multiple and EXCESS R:R above the 3:1 gate. The system's normal approvals
+enter near the 3:1 minimum (rr 3.1-3.7), so their room is structurally tiny
+by construction. F (rr 7.7 -> room 0.95 ATR) is the outlier, not the standard.
+"All three failures had room < 0.6 ATR" was true but incomplete: so did 7 of
+8 fills. NO GATE SHIPPED; no gate at any threshold survives the regression
+contract. C4 remains unchanged at 0.6.
+
+**What actually separates fills from drift-aways in the record — placement
+marketability, 7-for-7 vs 2-for-2:** every fill was placed with the live price
+AT or BELOW the limit (marketable; CCL 27.665<27.70, RF-8/25 at-limit, F
+13.91<13.98, ASO market order, etc.). Both placed-then-expired drifts were
+RESTING BELOW MARKET at placement: KGC placed with price 30.07 vs a 30.00
+limit; S's price had left its limit behind. (RF-8/21 never reached placement.)
+
+**PROC-2 candidate (process rule, no code, zero regression surface, NOT yet
+adopted — user decision pending):** place the approved entry ONLY if the live
+price at placement is <= the approved limit (and <= ceiling). If price sits
+above the limit, do not rest an order below the market — the approval lapses
+unfilled (identical $0 outcome, no order in the book, no overnight drift
+exposure). Applied historically: all 8 fills unchanged; S and KGC never
+placed; nothing else differs.
 
 ## PROC-1 — Never run the research pipeline pre-market (opened 2026-08-24)
 
