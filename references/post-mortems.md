@@ -179,13 +179,20 @@ AT or BELOW the limit (marketable; CCL 27.665<27.70, RF-8/25 at-limit, F
 RESTING BELOW MARKET at placement: KGC placed with price 30.07 vs a 30.00
 limit; S's price had left its limit behind. (RF-8/21 never reached placement.)
 
-**PROC-2 candidate (process rule, no code, zero regression surface, NOT yet
-adopted — user decision pending):** place the approved entry ONLY if the live
-price at placement is <= the approved limit (and <= ceiling). If price sits
-above the limit, do not rest an order below the market — the approval lapses
-unfilled (identical $0 outcome, no order in the book, no overnight drift
-exposure). Applied historically: all 8 fills unchanged; S and KGC never
-placed; nothing else differs.
+**PROC-2 — ADOPTED 2026-09-03 (user-approved; process rule, no code):**
+place the approved entry ONLY if the live price at placement is AT or BELOW
+the approved limit (and below the ceiling). If price sits above the limit, do
+NOT rest an order below the market — the approval lapses unfilled and the
+name re-competes fresh on the next run. Enforced at the price-confirmation
+step that precedes every manual placement.
+
+Honesty note (user-directed): the separator is 7-for-7 on fills and 2-for-2
+on drift-aways — a SMALL SAMPLE that could be coincidence. It is adopted
+anyway because it changes no historical outcome and adds no risk: all 8
+fills were already marketable at placement, and the two lapses (S, KGC)
+produce the identical $0 result with no resting order in the book and no
+overnight drift exposure. If a live case ever shows the rule costing a fill
+that would have worked, log it here and revisit.
 
 ## PROC-1 — Never run the research pipeline pre-market (opened 2026-08-24)
 
