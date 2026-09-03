@@ -16,6 +16,7 @@ entry before a fill could happen:
 |------|------|----------------|------|--------------|---------|
 | S    | 2026-07-30 | 17.90 / 17.93 | 17.01 | 0.949 (but only 3¢ of ceiling room) | DAY limit expired unfilled; price drifted to 17.975 > ceiling next session → dead |
 | RF   | 2026-08-21 | 30.22 / 30.53 | 29.89 | **0.626 — C4 boundary pass** (floor 0.6, cleared by 0.026 ≈ 1.4¢/share) | Ran to 30.65 > ceiling while report awaited approval, same afternoon; rr collapsed 6.82 → 2.40 at the close → report VOID |
+| KGC  | 2026-09-02 | 30.00 / 30.20 | 29.11 | **0.632 at screen — band** (0.661 at live re-verify; 20¢ of ceiling room) | Approved + placed; DAY limit expired unfilled at the close; opened 9/3 at 30.72, through the ceiling — the S shape exactly. $0 cost |
 
 RF is the purer example: it was the first C4-era approval and sat 0.026 above
 the freshly shipped 0.6 floor. The market resolved it within ~3 hours.
@@ -29,7 +30,13 @@ post-report gate failure) more often than comfortable clearers.
 
 **Trigger for action:** a third boundary case resolving against entry the same
 way → spec a rule (candidate: raise the floor toward 0.65-0.70, or add a
-ceiling-room minimum in ATR terms). **Held at TWO datapoints as of 2026-08-24.**
+ceiling-room minimum in ATR terms). **TRIGGER FIRED 2026-09-03 — KGC is the
+third datapoint (in scope: cleared every gate, presented, approved, evaporated
+unfilled). Spec offered to the user; NOT built pending explicit approval.**
+Calibration facts on hand: a 0.65 floor would have rejected RF (0.626) and KGC
+(0.632) at screen while keeping every historical approval (min real approval
+0.702 CCL, next 0.813 F); ceiling room on the three failures was 3¢/31¢/20¢
+(0.03/0.59/0.15 ATR) vs F's 35¢ (0.95 ATR) which filled instantly and worked.
 
 **SCOPE — what counts, and what explicitly does not (user-directed 2026-08-24):**
 OBS-1 measures ONE failure mode: a candidate that **cleared every gate and was
