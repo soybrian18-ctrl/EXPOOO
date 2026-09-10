@@ -194,6 +194,35 @@ produce the identical $0 result with no resting order in the book and no
 overnight drift exposure. If a live case ever shows the rule costing a fill
 that would have worked, log it here and revisit.
 
+---
+
+## BACKLOG-1 — Rank technical survivors by R:R before gating (logged 2026-09-10, NOT built)
+
+**Observation (user-directed):** the gate loop stops at the first full web-gate
+pass, evaluating survivors in SCREEN order — additional technical survivors go
+unevaluated. On 2026-09-01, BAX (rr 5.30) and TFC (rr 6.17) cleared the
+prefilter and were never gated because F won the queue. The pool widening to
+15-20 (2026-09-10) makes the gap larger.
+
+**2026-09-10 — THE GAP CHANGED A LIVE DECISION.** The first wide-pool run
+(19 screened) produced three survivors; the pipeline approved AMRX on queue
+position alone (7th in screen order). User-directed catch-up gating found
+VTRS a FULL PASSER that beat AMRX on insider signal (AMRX: $7.2M sold at the
+entry zone, 0 buys; VTRS: CEO bought at $9-10, no 90d selling), R:R (4.95 vs
+4.61), valuation (fwd P/E 6.5 vs 17.4), FCF ($1.96B vs $83M TTM), liquidity
+and leverage — and the user chose VTRS over the pipeline's pick. (LUV, the
+third survivor, failed the FCF gate.) Strongest possible argument for this
+spec.
+
+**Future spec candidate:** sort `survivors` by descending prefilter R:R before
+the gate loop, so MAX_CANDIDATES budget is spent in R:R order — OR gate ALL
+survivors and present a comparison when more than one passes (what the user
+effectively did by hand on 9/10). Open design caution: OBS-2/OBS-3 show
+inflated R:R accompanies deteriorating boundary setups — an rr-alone sort key
+would prioritize exactly the fake-ratio profile C4 exists to catch; candidates:
+sort only among atr_floor_ok survivors, cap the key, or gate-all-and-compare.
+DO NOT BUILD without a spec + approval + regression.
+
 ## PROC-1 — Never run the research pipeline pre-market (opened 2026-08-24)
 
 **Incident:** the 2026-08-24 run was launched at 08:14 ET, 76 minutes before
