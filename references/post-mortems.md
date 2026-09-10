@@ -194,6 +194,16 @@ produce the identical $0 result with no resting order in the book and no
 overnight drift exposure. If a live case ever shows the rule costing a fill
 that would have worked, log it here and revisit.
 
+**Edge case #1 (2026-09-10, CNK):** the pre-placement confirm read 35.02 vs a
+35.00 approved limit (2c over) -> rule said LAPSE. The user placed anyway and
+the order FILLED AT THE EXACT LIMIT 45 seconds later — no chase, no rest, no
+ceiling breach. The rule's letter produced a false negative on a 2c oscillation
+that the drift cases (S 7c-plus, KGC 7c-then-$1, TFC band-crossers) never
+resembled. One case, logged per this clause — possible refinement if a second
+occurs: a small tolerance (e.g. price within 0.1 x ATR above the limit still
+placeable, since the DAY limit itself caps the fill price) or a single re-poll
+after 60s. NOT changed now.
+
 ---
 
 ## BACKLOG-1 — Rank technical survivors by R:R before gating (logged 2026-09-10, NOT built)
