@@ -12,6 +12,8 @@ export const meta = {
 // === LOOP_CONFIG (guardrail G1: all caps are named constants, never inline) ===
 const LOOP_CONFIG = {
   MAX_CANDIDATES: 5,                       // cap on web-gated SURVIVORS -> guarantees termination
+  SCREEN_POOL_MIN: 15,                     // widened from 8-12 (user-directed 2026-09-10): P4's single
+  SCREEN_POOL_MAX: 20,                     // deterministic prefilter pass makes a bigger pool cheap
   MIN_RR: 3.0,                             // reward:risk gate at Target 1
   MIN_AVG_VOLUME: 300000,                  // P3 liquidity floor (30-day avg shares/day)
   CANDIDATE_TIMEOUT_SECONDS: 300,          // documented per-candidate budget (see note below)
@@ -220,7 +222,7 @@ const screen = await agent(
   `NOT in ${LOOP_CONFIG.EXCLUDED_SECTORS.join(' / ')}, and NOT these held tickers: ` +
   `${excludedTickers.join(', ') || '(none)'}. Use live web search. Favor names basing above tested ` +
   `support with room to real overhead resistance (3:1 reward:risk plausible) -- NOT names collapsing ` +
-  `to fresh lows. Return 8-12 tickers ranked by conviction.`,
+  `to fresh lows. Return ${LOOP_CONFIG.SCREEN_POOL_MIN}-${LOOP_CONFIG.SCREEN_POOL_MAX} tickers ranked by conviction.`,
   { label: 'screen', phase: 'Screen', schema: SCREEN_SCHEMA }
 )
 
