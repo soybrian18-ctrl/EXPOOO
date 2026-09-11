@@ -31,21 +31,36 @@ approval gate at the end is NON-NEGOTIABLE.
    **C4 ATR floor: risk/share ≥ 0.6 × ATR14** (2026-08-21 — a tighter stop is
    inside session noise and its R:R is fake; KEY/DVN/PFE),
    **R:R ≥ 3:1 at Target 1 from REAL levels**, ≥300k avg volume, price $5–50, and the
-   full deterministic sizing check) → web-gate the technical survivors only (FCF+,
-   dated catalyst ≤60 days, allowed sector, and the numeric declining-revenue/moat
-   rule) → stop at the first full pass or `MAX_CANDIDATES = 5` survivors gated.
+   full deterministic sizing check) → **C6 (2026-09-11): web-gate ALL technical
+   survivors** — bounded by `MAX_CANDIDATES = 5`, selected when >5 by
+   min(rr, 6.0) desc → stop_atr_multiple desc → screen order (empirical basis
+   in the SELECTION_RR_CAP comment) — no first-pass early stop; every full
+   passer gets a dossier and the USER picks the winner, not the pipeline.
+   (First-pass-wins retired after three same-day outcome changes on 9/10.)
    **P2 breakout mode is RETIRED (2026-08-12)** — full-population replay showed no
    edge (20% hit rate ≈ breakeven; motivating escapes were gaps, not breakouts).
    No shadow logging exists. `loops/breakout_replay.py` is retained as the harness
    for evaluating any future entry-pattern idea; a gap-continuation redesign is
    PARKED until the October 29 review — do not spec or build it before then.
 
-4. **If the workflow returns `approved: null`** → present the "no qualifying candidate"
+4. **If the workflow returns `passers: []`** → present the "no qualifying candidate"
    summary (every evaluated ticker + the gate each failed), then **STOP**. There is no
    trade to approve, so no approval gate is needed.
 
-5. **If a candidate is approved** → using the workflow's `dossier`, the REAL technicals
-   levels (`approved.entry/stop/t1`), and the step-2 live balance, write —
+5. **C6 presentation.** Re-verify EVERY passer's technicals LIVE immediately
+   before presenting (boundary-band names especially — standing rule; a passer
+   that fails its live re-verify is disqualified on the spot with the broken
+   numbers shown).
+   - **Exactly 1 passer** → the standard full report below, using `passers[0]`
+     and `dossiers[0]`.
+   - **≥2 passers** → the comparison shape (codified from 2026-09-10): a
+     head-to-head table (live price/stop/risk/ATR multiple/rr/ceiling+room/
+     shares/position risk, valuation snapshot, FCF, revenue legs, moat, C3
+     insiders, catalyst + confirmation status, sector + C1 flag, liquidity),
+     condensed dossier sections per passer, trade levels + PROC-2 terms for
+     each, a recommendation, and ONE approval line. The user picks.
+   For whichever path applies, write — using the workflow's dossier(s), the
+   REAL technicals levels, and the step-2 live balance —
    including in section 6 the C3 insider-BUYING line (buys/buyers/$ total, trailing
    90d, with the data note) alongside any selling observations, and the C1 sector
    soft flag prominently if the candidate is a 2nd-in-sector:
@@ -55,9 +70,12 @@ approval gate at the end is NON-NEGOTIABLE.
      live balance with the 2% rule.
 
 6. **Write the execution handoff** (this is what `loops/order_executor.py` consumes when you
-   type `approved`). **Before** the approval line, write `logs/pending_order.json` from the
-   approved order — the REAL numbers from the report, `env:"paper"`, a current `computed_at`,
-   and a short `report_fingerprint`. Write it deterministically:
+   type `approved`). **Single passer:** before the approval line, write
+   `logs/pending_order.json` from the report's real numbers as below.
+   **Multiple passers (C6/D4):** the winner is unknown until the user chooses —
+   write the handoff AT APPROVAL TIME for the chosen ticker instead (the
+   executor's 15-min freshness TTL makes a pre-written handoff stale by then
+   anyway). Write it deterministically:
    ```bash
    .venv/bin/python - <<'PY'
    import json, hashlib, datetime as dt, pathlib

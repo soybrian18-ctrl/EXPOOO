@@ -1,11 +1,11 @@
 export const meta = {
   name: 'equity-research-loop',
-  description: 'Loop 3: screen -> deterministic technical prefilter -> web-gate survivors; stop at first approved or MAX_CANDIDATES gated. Generates research only -- never places orders.',
+  description: 'Loop 3: screen -> deterministic technical prefilter -> web-gate ALL survivors (C6, bounded by MAX_CANDIDATES) -> dossier every passer for user comparison. Generates research only -- never places orders.',
   phases: [
     { title: 'Screen', detail: 'web-screen a candidate pool' },
     { title: 'Prefilter', detail: 'ONE technicals.py pass over the whole pool; deterministic R:R/knife/liquidity/sizing filter (P4)' },
-    { title: 'Gate', detail: 'web-verify survivors only (FCF, catalyst, sector, revenue numbers, moat)' },
-    { title: 'Dossier', detail: 'full research for the approved candidate only' },
+    { title: 'Gate', detail: 'C6: web-verify ALL survivors (selection-sorted, bounded by MAX_CANDIDATES) -- no first-pass early stop' },
+    { title: 'Dossier', detail: 'full research for EVERY passer; the user picks the winner, not the pipeline' },
   ],
 }
 
@@ -14,6 +14,23 @@ const LOOP_CONFIG = {
   MAX_CANDIDATES: 5,                       // cap on web-gated SURVIVORS -> guarantees termination
   SCREEN_POOL_MIN: 15,                     // widened from 8-12 (user-directed 2026-09-10): P4's single
   SCREEN_POOL_MAX: 20,                     // deterministic prefilter pass makes a bigger pool cheap
+  // C6 (2026-09-11): when survivors > MAX_CANDIDATES, gate the top 5 by
+  // min(rr, SELECTION_RR_CAP) desc, then stop_atr_multiple desc, then screen
+  // order. EMPIRICAL BASIS FOR THE 6.0 CAP (same lineage standard as C4):
+  // across the full run record, every documented FAKE ratio among prefilter
+  // rows printed rr > 6.9 (KEY 8.4->12.8, HBAN 8.6, FNB 8.8, VLY 13.7,
+  // FHN 8.5->23.5, ERIC 22.8, ALLY 10.9->20, LEVI 13.3->35.2, AMKR 23.5,
+  // LUV 12.9, decayed-AMRX 11.3), while every entry that actually FILLED sat
+  // at rr 3.1-7.7. The cap collapses the fake tail into one bucket without
+  // penalizing genuine quality (F's 7.7 caps to 6.0, stays top-tier); the
+  // ATR-multiple tie-break decides inside the bucket because every documented
+  // fake traveled with a sub-healthy multiple (KEY 0.498, HAL 0.454,
+  // FHN <=0.701, ALLY <=0.543) while real fills clustered 0.70-1.35 --
+  // OBS-2/OBS-3 applied: rr capped, multiple as the health check. Raw rr
+  // descending is user-forbidden (2026-09-11). Historical survivor sets max
+  // out at 4, so this selection has never yet excluded anyone (see
+  // loops/regression_c6_selection.py).
+  SELECTION_RR_CAP: 6.0,
   MIN_RR: 3.0,                             // reward:risk gate at Target 1
   MIN_AVG_VOLUME: 300000,                  // P3 liquidity floor (30-day avg shares/day)
   CANDIDATE_TIMEOUT_SECONDS: 300,          // documented per-candidate budget (see note below)
@@ -245,26 +262,35 @@ const pre = pool.length === 0 ? { results: [] } : await agent(
 )
 
 const preRows = (pre?.results || []).filter(r => r && r.ticker)
-const preEvaluated = preRows.map(r => {
+const preEvaluated = preRows.map((r, i) => {
   const fails = technicalFails(r)
   return {
-    ticker: String(r.ticker).toUpperCase(), stage: 'prefilter',
+    ticker: String(r.ticker).toUpperCase(), stage: 'prefilter', idx: i,
     rr: r.rr_to_resistance ?? null, entry: r.last ?? null, stop: r.suggested_stop ?? null,
-    t1: r.nearest_resistance_40d ?? null, fails, passed: fails.length === 0,
+    t1: r.nearest_resistance_40d ?? null, atr_mult: r.stop_atr_multiple ?? null,
+    fails, passed: fails.length === 0,
   }
 })
 const survivors = preEvaluated.filter(r => r.passed)
-log(`Prefilter: ${preRows.length} screened -> ${survivors.length} technical survivors`)
+// C6 (2026-09-11): first-pass-wins in screen order is RETIRED -- on 9/10 it
+// picked AMRX over VTRS (user chose VTRS once gated), skipped LNC (which then
+// failed FCF), and buried CNK (the eventual sole passer) at 4th in queue.
+// Gate EVERY survivor, bounded by MAX_CANDIDATES via the selection sort.
+const selKey = s => Math.min(s.rr ?? 0, LOOP_CONFIG.SELECTION_RR_CAP)
+const ordered = [...survivors].sort((a, b) =>
+  selKey(b) - selKey(a) || (b.atr_mult ?? 0) - (a.atr_mult ?? 0) || a.idx - b.idx)
+const toGate = ordered.slice(0, LOOP_CONFIG.MAX_CANDIDATES)
+log(`Prefilter: ${preRows.length} screened -> ${survivors.length} technical survivors; gating ${toGate.length} (C6 gate-all)`)
 
 // --- Gate: web verification for SURVIVORS ONLY (bounded by MAX_CANDIDATES) ---
 phase('Gate')
-let approved = null
+const passers = []
 const gated = []
-for (let i = 0; i < survivors.length && gated.length < LOOP_CONFIG.MAX_CANDIDATES && !approved; i++) {
-  const cand = survivors[i]
+for (let i = 0; i < toGate.length; i++) {
+  const cand = toGate[i]
   const ticker = cand.ticker
   const verdict = await agent(
-    `Web-verify candidate ${ticker} (survivor ${gated.length + 1}/${Math.min(survivors.length, LOOP_CONFIG.MAX_CANDIDATES)}) ` +
+    `Web-verify candidate ${ticker} (survivor ${i + 1}/${toGate.length}) ` +
     `for the trading-rule gates. Technicals already passed deterministically (entry=${cand.entry}, stop=${cand.stop}, ` +
     `T1=${cand.t1}, R:R=${cand.rr}). ${balanceNote}\n\n` +
     `STEP 1 -- log the start (Bash):\n  .venv/bin/python loops/research_log.py log START "gate ticker=${ticker}"\n\n` +
@@ -317,12 +343,13 @@ for (let i = 0; i < survivors.length && gated.length < LOOP_CONFIG.MAX_CANDIDATE
     fails, passed: fails.length === 0, notes: verdict.notes,
   }
   gated.push(rec)
-  if (rec.passed) approved = rec
+  if (rec.passed) passers.push(rec)
 }
 
-if (!approved) {
+if (passers.length === 0) {
   return {
     approved: null,
+    passers: [],
     prefilter: preEvaluated,
     gated,
     reason: pool.length === 0 ? 'no_candidates_screened'
@@ -330,13 +357,24 @@ if (!approved) {
   }
 }
 
-// --- Full 9-section research dossier for the APPROVED candidate only ---
+// --- C6: full 9-section research dossier for EVERY passer, in parallel ---
 phase('Dossier')
-const dossier = await agent(
-  `Produce thoroughly web-verified research for ${approved.ticker} (cite sources + as-of dates; flag data gaps): ` +
+const dossiers = await parallel(passers.map(p => () => agent(
+  `Produce thoroughly web-verified research for ${p.ticker} (cite sources + as-of dates; flag data gaps): ` +
   `financials (5y + TTM, FCF), valuation vs 3 peers, business + moat, growth + TAM, management + insider activity, ` +
   `EXACTLY 3 company-specific + 3 systemic risks, the near-term catalyst, and the analyst average price target.`,
-  { label: `dossier:${approved.ticker}`, phase: 'Dossier', schema: DOSSIER_SCHEMA }
-)
+  { label: `dossier:${p.ticker}`, phase: 'Dossier', schema: DOSSIER_SCHEMA }
+)))
 
-return { approved, dossier, prefilter: preEvaluated, gated }
+// `approved` kept for compatibility: set ONLY when exactly one passer exists;
+// with multiple passers the USER picks the winner in the comparison step.
+return {
+  passers,
+  approved: passers.length === 1 ? passers[0] : null,
+  dossiers,
+  dossier: passers.length === 1 ? dossiers[0] : null,
+  prefilter: preEvaluated,
+  gated,
+  selection: { survivors: survivors.length, gated: toGate.length,
+               key: `min(rr,${LOOP_CONFIG.SELECTION_RR_CAP}) desc -> stop_atr_multiple desc -> screen order` },
+}

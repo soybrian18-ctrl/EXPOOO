@@ -206,7 +206,7 @@ after 60s. NOT changed now.
 
 ---
 
-## BACKLOG-1 — Rank technical survivors by R:R before gating (logged 2026-09-10, NOT built)
+## BACKLOG-1 — Gate-all-and-compare (logged 2026-09-10; **SHIPPED AS C6, 2026-09-11**)
 
 **Observation (user-directed):** the gate loop stops at the first full web-gate
 pass, evaluating survivors in SCREEN order — additional technical survivors go
@@ -232,6 +232,17 @@ inflated R:R accompanies deteriorating boundary setups — an rr-alone sort key
 would prioritize exactly the fake-ratio profile C4 exists to catch; candidates:
 sort only among atr_floor_ok survivors, cap the key, or gate-all-and-compare.
 DO NOT BUILD without a spec + approval + regression.
+
+**RESOLUTION (2026-09-11): shipped as C6, user-approved spec.** Final design:
+gate ALL survivors (MAX_CANDIDATES=5 unchanged), selection when >5 by
+min(rr, 6.0) desc -> stop_atr_multiple desc -> screen order (raw-rr sort
+user-forbidden; empirical basis inline at SELECTION_RR_CAP in
+research_workflow.js), dossier every passer, user picks via the 9/10-shape
+comparison; handoff written at approval time for multi-passer runs.
+Regression: loops/regression_c6_selection.py — zero historical exclusions
+(max survivors ever = 4), ordering locked on the three documented sets, and
+the outcome audit records 9/10 AM + PM as live-confirmed outcome changes and
+**BAX (9/1) as UNKNOWABLE OFFLINE — deliberately neither pass nor fail**.
 
 ## PROC-1 — Never run the research pipeline pre-market (opened 2026-08-24)
 
