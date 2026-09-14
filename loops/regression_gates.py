@@ -177,8 +177,15 @@ def new_verdict(levels: dict, bal: dict) -> tuple[str, str]:
     if vol < MIN_AVG_VOLUME:
         return "REJECT", f"liquidity={vol}"
     last, risk = levels["last"], levels["risk_per_share"]
-    buyable = min(int(200 // last), int(bal["budget"] // risk), int(bal["headroom"] // last))
-    if buyable < 3 or buyable * last < 150:
+    # C7 (2026-09-11): %-of-NL sizing (18-25%), replacing $150-200. NL is
+    # reconstructed from the recorded 2% budget (nl = budget * 50; <=25c
+    # rounding error, immaterial at these thresholds). Replayed APPROVE rows
+    # may report different share counts than the original fixed-$ rule --
+    # verdicts must not flip; counts are informational.
+    nl = round(bal["budget"] * 50, 2)
+    cap_d, floor_d = 0.25 * nl, 0.18 * nl
+    buyable = min(int(cap_d // last), int(bal["budget"] // risk), int(bal["headroom"] // last))
+    if buyable < 3 or buyable * last < floor_d:
         return "REJECT", f"sizing(buyable={buyable})"
     return "APPROVE", f"rr={rr} stop={levels['suggested_stop']} shares={buyable}"
 

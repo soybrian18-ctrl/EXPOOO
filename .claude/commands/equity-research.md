@@ -31,7 +31,8 @@ approval gate at the end is NON-NEGOTIABLE.
    **C4 ATR floor: risk/share ≥ 0.6 × ATR14** (2026-08-21 — a tighter stop is
    inside session noise and its R:R is fake; KEY/DVN/PFE),
    **R:R ≥ 3:1 at Target 1 from REAL levels**, ≥300k avg volume, price $5–50, and the
-   full deterministic sizing check) → **C6 (2026-09-11): web-gate ALL technical
+   full deterministic sizing check — **C7 (2026-09-11): 18–25% of net liq per
+   position, min 3 shares; floor ≤ 0.75 × cap invariant, not retroactive**) → **C6 (2026-09-11): web-gate ALL technical
    survivors** — bounded by `MAX_CANDIDATES = 5`, selected when >5 by
    min(rr, 6.0) desc → stop_atr_multiple desc → screen order (empirical basis
    in the SELECTION_RR_CAP comment) — no first-pass early stop; every full

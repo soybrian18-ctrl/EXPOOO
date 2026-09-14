@@ -37,7 +37,22 @@ const LOOP_CONFIG = {
   OVERALL_TIMEOUT_SECONDS: 1200,           // documented overall budget
   DETERMINISTIC_OP_TIMEOUT_SECONDS: 60,    // applies to technicals.py / research_inputs.py
   PRICE_MIN: 5, PRICE_MAX: 50,
-  MIN_POSITION_USD: 150, MAX_POSITION_USD: 200,
+  // C7 (2026-09-11): position size is a PERCENTAGE of net liq, replacing the
+  // fixed $150-200 range that jammed the book at 2 positions once the 70%-cap
+  // headroom ($120 at NL $702) fell below the fixed $150 floor. Calibration:
+  // the 10 historical fills clustered 24.7-28.0% of NL; 18-25% replays all of
+  // them with ZERO flips and yields a 3-position book at any NL
+  // (25+25+18 = 68 <= 70), ending deployment always inside the 60-70% band.
+  // INVARIANT -- KEEP floor <= 0.75 x cap: the high-price sizing-conflict
+  // window (a cap-bound 3-share position of a near-$50 name stranded below
+  // the floor, ASO's exact profile) exists if and only if floor > 0.75 x cap.
+  // 18/25 = 0.72 satisfies it, which is WHY no waiver logic exists here; a
+  // future band change that breaks this ratio silently reintroduces the
+  // window at some NL x price combination.
+  // NOT RETROACTIVE: positions opened under the old $-rule keep their size;
+  // the 9/11 two-position book (~26-28% each) stays at 2 until an exit or NL
+  // growth reopens headroom -- C7 prevents recurrence, it does not unlock it.
+  POSITION_FLOOR_PCT: 18, POSITION_CAP_PCT: 25,
   MIN_SHARES: 3,
   EXCLUDED_SECTORS: ['packaged food', 'ad-tech / digital advertising', 'consumer footwear'],
 }
@@ -203,14 +218,17 @@ const DOSSIER_SCHEMA = {
 }
 
 // P6: FULLY deterministic sizing -- single source of truth in the orchestrator.
+// C7 (2026-09-11): dollar caps replaced by % of net liq (see LOOP_CONFIG).
 function sizingCheck(entry, risk) {
   if (!(risk > 0) || !(entry > 0)) return { ok: false, buyable: 0 }
+  const capD = LOOP_CONFIG.POSITION_CAP_PCT / 100 * A.net_liq
+  const floorD = LOOP_CONFIG.POSITION_FLOOR_PCT / 100 * A.net_liq
   const buyable = Math.min(
-    Math.floor(LOOP_CONFIG.MAX_POSITION_USD / entry),
+    Math.floor(capD / entry),
     Math.floor(A.two_pct_budget / risk),
     Math.floor(A.headroom_to_70pct / entry),
   )
-  return { ok: buyable >= LOOP_CONFIG.MIN_SHARES && buyable * entry >= LOOP_CONFIG.MIN_POSITION_USD, buyable }
+  return { ok: buyable >= LOOP_CONFIG.MIN_SHARES && buyable * entry >= floorD, buyable }
 }
 
 // Deterministic technical verdict for one prefilter row (P1/P3/P4 + sizing P6).

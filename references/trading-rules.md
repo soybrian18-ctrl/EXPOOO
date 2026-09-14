@@ -8,7 +8,7 @@ Equity Account Structure:
 
 - Total capital: $650
 
-- Active positions: 3 to 4 stocks maximum at any one time
+- Active positions: 3 stocks maximum at any one time (revised 2026-09-11 with percentage sizing: under the 18–25% position band and the 70% deployment cap, a 4th position is structurally unreachable — 4 × 18% = 72% > 70%. The former "3 to 4" wording is retired and should not be read as still reachable.)
 
 - Capital deployed in active positions: 60% to 70% of current account value — deploy into qualified setups only; if no candidate passes the entry gates, holding cash below the band is correct. Never force a trade to reach the deployment band.
 
@@ -16,7 +16,7 @@ Equity Account Structure:
 
 - Never be fully deployed
 
-- Target position size: $150 to $200 per trade
+- Target position size: 18% to 25% of current net liquidation value per trade, minimum 3 shares (revised 2026-09-11, replacing the fixed $150–$200 range that jammed the book at 2 positions once 70%-cap headroom fell below the fixed floor. NOT RETROACTIVE: positions opened under the former dollar rule keep their size — the 2026-09-11 two-position book, sized ~26–28% each, stays at 2 until an exit or net-liq growth reopens headroom; this rule prevents recurrence, it does not unlock current headroom.)
 
 - Maximum risk per trade: 2% of current account value
 
