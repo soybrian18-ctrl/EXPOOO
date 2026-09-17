@@ -23,7 +23,8 @@ Gate lineage (each rule traces to a live incident):
     The breakout_* fields below are retained SOLELY for the replay harness and
     future entry-pattern research -- they MUST NOT feed any live approval path.
   * 2026-08-21 C4: ATR stop-distance floor -- risk_per_share must be >=
-    ATR_FLOOR_MULT (0.6) x ATR14 or the setup is rejected outright
+    ATR_FLOOR_MULT (originally 0.6; raised by C8 below) x ATR14 or the setup
+    is rejected outright
     (stop_below_atr_floor). A stop inside ~half an ATR sits inside ordinary
     session noise and produces inflated R:R arithmetic: KEY 2026-08-19 passed
     the shelf detector at 0.498 x ATR (rr printed 8.40) and the shelf broke
@@ -37,6 +38,24 @@ Gate lineage (each rule traces to a live incident):
     same 8 shares via the $200 cap) on a name that fell to 21.82 two sessions
     later; widening a stop cannot fix a knife-adjacent setup, it just pays
     more to lose. Revisit only if the reject rate proves costly.
+  * 2026-09-17 C8: floor RAISED 0.6 -> 0.65 after the boundary band (screen
+    multiple 0.60-0.65) went 0-for-4 on producing a trade: HAL 0.609 (decayed
+    to 0.349 in 26 min), RF 0.626 (drifted through ceiling unfilled), KGC
+    0.632 (same), RSI 0.635 (OBS-3 case #3 -- decayed to 0.542 in ~35
+    regular-hours minutes while its rr INFLATED 9.65 -> 11.47). Calibration
+    (c8_floor_sweep_study, all TEN fills verified incl. the previously
+    unlogged VTRS 0.95 and CNK 0.802): the minimum fill multiple is CCL
+    0.702, and the zone between the worst boundary failure (0.635) and that
+    minimum is EMPTY and only 0.067 WIDE -- there is very little room between
+    the clusters, so no floor in it can carry C4's original ~0.10 margins on
+    both sides. 0.65 rejects all four failures (0.015 clearance) at ZERO
+    historical fill cost (0.052 margin to CCL). WARNING FOR ANY FUTURE RAISE:
+    **CCL 0.702 is the BINDING CONSTRAINT -- 0.71+ flips CCL, a hard
+    regression row; even 0.70 leaves only 0.002.** D1 ruling (user, 9/17):
+    the fill-side margin gets the larger share because it has NO backstop;
+    the boundary side is backstopped by the mandatory pre-presentation live
+    re-verify (3-for-3: KMI, HAL, RSI), which stays in force unchanged. The
+    boundary tracking band moves with the floor: now [0.65, 0.70).
 
 Usage:  python loops/technicals.py TICKER [TICKER ...]   (prints JSON to stdout)
 
@@ -58,7 +77,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 STOP_ATR_BUFFER = 0.2        # stop sits this many ATRs below the anchor's shelf floor
-ATR_FLOOR_MULT = 0.6         # C4: risk_per_share must be >= this many ATRs (else fake-R:R reject)
+ATR_FLOOR_MULT = 0.65        # C4 floor (0.6 2026-08-21), RAISED by C8 2026-09-17 -- see lineage docstring
 SHELF_TOLERANCE_ATR = 0.25   # lows within this band of an anchor count as shelf touches
 PIVOT_WING = 2               # sessions each side for a swing-low pivot
 MIN_SUPPORT_AGE = 5          # anchor must be >= this many sessions old

@@ -88,9 +88,11 @@ EXPECTATIONS = [
     ("2026-07-23", "RRC",  "REJECT",  False, "valid setup, rr 0.40 (watch)"),
     # --- C4 expansion (2026-08-21): every post-7/23 approval becomes a HARD
     # no-flip row. Stops sat at 0.70-0.95 x ATR14 -- these rows are the reason
-    # the C4 floor is 0.6 and not higher (a 1.0 floor would flip all five plus
+    # the C4 floor was 0.6 and not higher (a 1.0 floor would flip all five plus
     # TENB at 0.877; the -1R stop-outs among them are expected behavior in a
-    # 3:1 system, per the P1 AR precedent).
+    # 3:1 system, per the P1 AR precedent). C8 (2026-09-17) raised the floor
+    # to 0.65: still below every row here -- CCL 0.702 is the binding minimum
+    # (see regression_c8_floor.py), so these rows must keep holding unchanged.
     ("2026-07-29", "FRO",  "APPROVE", True,  "approved entry 38.60; stop 0.909 x ATR; stopped 8/11 -1R"),
     ("2026-07-30", "S",    "APPROVE", True,  "approved entry 17.90; stop 0.949 x ATR; expired unfilled"),
     ("2026-07-31", "AEO",  "APPROVE", True,  "approved entry 17.18; stop 0.874 x ATR; stopped 8/12 -1R"),

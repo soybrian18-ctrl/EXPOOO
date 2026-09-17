@@ -44,9 +44,18 @@ producing a trade**: RF 8/21 (0.626) drifted through its ceiling unfilled,
 KGC 9/2 (0.632) drifted through its ceiling unfilled, HAL 8/25 (0.609) decayed
 through the C4 floor in 26 minutes pre-presentation, RSI 9/17 (0.635) decayed
 through the floor in ~35 regular-hours minutes pre-presentation (0.635 → 0.542;
-see OBS-3, where it is the trigger-firing third case). ATR_FLOOR_MULT stays 0.6
-— C4 was calibrated to reject fake ratios from noise-tight stops and does that
-job well; it is not to be overloaded with a second job (user ruling 9/3).
+see OBS-3, where it is the trigger-firing third case).
+
+**RESOLVED BY C8 (2026-09-17):** ATR_FLOOR_MULT raised 0.6 → 0.65 (user-
+approved; commit carries the calibration). All four tally members now reject
+AT SCREEN. The 0.60–0.65 band this tally tracked no longer exists; the
+tracking band moves with the floor to **[0.65, 0.70)** — names screening
+there get the same treatment the old band did: flagged at screen, mandatory
+live re-verify immediately before presenting (unchanged, 3-for-3: KMI, HAL,
+RSI). The 9/3 "no second job" ruling is superseded on the threshold only —
+C4's job description is unchanged; the floor value moved because the band's
+own record (0-for-4, zero trades) crossed the OBS-3 trigger, not because C4
+was given a second job.
 
 **SCOPE — what counts, and what explicitly does not (user-directed 2026-08-24):**
 OBS-1 measures ONE failure mode: a candidate that **cleared every gate and was
@@ -157,6 +166,21 @@ while HAL (0.609) was already screen-rejectable at 0.65. Before any floor
 raise is calibrated, the 9/10 VTRS and CNK fill multiples must be pulled from
 that run's records and confirmed above the candidate threshold (the "keeps
 every historical fill" claim was last verified before those fills existed).
+
+**RESOLVED — SHIPPED AS C8 (2026-09-17, same day, user-approved).** The
+calibration requirement above was met first: VTRS confirmed 0.95 (logged) and
+CNK computed 0.802 (never logged; first computation, replay-confirmed). Sweep
+result: minimum fill multiple across all ten fills is CCL 0.702; the zone
+(0.635, 0.702) is EMPTY in the record and 0.067 wide. Floor set at 0.65 (D1):
+rejects all four boundary failures with 0.015 clearance, keeps every fill
+with 0.052 margin — the larger margin deliberately on the fill side because
+it has NO backstop, while the boundary side keeps the mandatory live
+re-verify (user's D1 reasoning, on record). The two-read stability rule was
+explicitly NOT built — the re-verify already does that job. Permanent
+harness: `loops/regression_c8_floor.py` (ten fills, four failures, KEY, C6
+interaction, and the RF 1.537-vs-1.081 replay discrepancy reported in its
+output). OBS-3 and this tally are CLOSED; future [0.65, 0.70) screeners are
+tracked under the moved band.
 
 ---
 

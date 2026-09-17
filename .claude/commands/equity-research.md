@@ -28,8 +28,11 @@ approval gate at the end is NON-NEGOTIABLE.
    sector-blocked candidate in the rejects table (user-confirmed D1).
    Pipeline (2026-07-23): screen a pool → **one deterministic `loops/technicals.py`
    prefilter pass over the whole pool** (falling-knife, aged-support anchor,
-   **C4 ATR floor: risk/share ≥ 0.6 × ATR14** (2026-08-21 — a tighter stop is
-   inside session noise and its R:R is fake; KEY/DVN/PFE),
+   **C4 ATR floor: risk/share ≥ 0.65 × ATR14** (2026-08-21 at 0.6 — a tighter
+   stop is inside session noise and its R:R is fake; KEY/DVN/PFE — raised to
+   0.65 by **C8 (2026-09-17)** after the boundary band went 0-for-4; the
+   boundary tracking band is now [0.65, 0.70) and the mandatory pre-
+   presentation live re-verify stays in force),
    **R:R ≥ 3:1 at Target 1 from REAL levels**, ≥300k avg volume, price $5–50, and the
    full deterministic sizing check — **C7 (2026-09-11): 18–25% of net liq per
    position, min 3 shares; floor ≤ 0.75 × cap invariant, not retroactive**) → **C6 (2026-09-11): web-gate ALL technical
