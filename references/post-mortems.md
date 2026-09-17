@@ -39,10 +39,12 @@ Calibration facts on hand: a 0.65 floor would have rejected RF (0.626) and KGC
 (0.03/0.59/0.15 ATR) vs F's 35¢ (0.95 ATR) which filled instantly and worked.
 
 **Boundary-band tally (user-directed 2026-09-03, tracking only, NO threshold
-change):** boundary-band names (multiple 0.60-0.65 at screen) are **0-for-3 on
+change):** boundary-band names (multiple 0.60-0.65 at screen) are **0-for-4 on
 producing a trade**: RF 8/21 (0.626) drifted through its ceiling unfilled,
 KGC 9/2 (0.632) drifted through its ceiling unfilled, HAL 8/25 (0.609) decayed
-through the C4 floor in 26 minutes pre-presentation. ATR_FLOOR_MULT stays 0.6
+through the C4 floor in 26 minutes pre-presentation, RSI 9/17 (0.635) decayed
+through the floor in ~35 regular-hours minutes pre-presentation (0.635 → 0.542;
+see OBS-3, where it is the trigger-firing third case). ATR_FLOOR_MULT stays 0.6
 — C4 was calibrated to reject fake ratios from noise-tight stops and does that
 job well; it is not to be overloaded with a second job (user ruling 9/3).
 
@@ -117,6 +119,7 @@ re-verify. Two consecutive trading days, same signature:
 |------|-------------|----------------|----------|-----|---------|
 | KMI 2026-08-24 | 31.17, risk 0.554 | 30.68, risk 0.205 | **0.743 → 0.29** | 3.91 → **12.8** | ~80 min (incl. pre-market; see PROC-1) |
 | HAL 2026-08-25 | 34.42, risk 0.550 | 34.19, risk 0.315 | **0.609 → 0.349** | 3.24 → **6.40** | **26 min, all regular-hours** |
+| RSI 2026-09-17 | 25.88, risk 0.650 | 25.785, risk 0.555 | **0.635 → 0.542** | 9.65 → **11.47** | **~35 min, all regular-hours** |
 
 **The signature:** price drifts DOWN toward a fixed stop → risk/share shrinks →
 the ATR multiple falls through the floor → and the headline R:R *inflates*
@@ -141,6 +144,19 @@ run started.**
 so the boundary band sits above the decay zone, and/or requiring a boundary-band
 candidate to be re-verified stable across two reads before it can be presented.
 Not before — two cases, tracked only.
+
+**TRIGGER FIRED 2026-09-17 — RSI is the third case** (0.635 at screen → 0.542
+at the ~35-min live re-verify, all regular hours; rr inflated 9.65 → 11.47;
+sole survivor of an 18-name pool, so the run produced no candidate). In scope:
+prefilter pass in the 0.60-0.65 band, decay through the floor pre-presentation,
+caught by the live re-verify the OBS-3 consequence mandates. Spec offered to
+the user; NOT built pending explicit approval. Calibration facts on hand: a
+0.65 screen floor would also have rejected RF (0.626), KGC (0.632), and RSI
+(0.635) at screen — the entire 0-for-4 boundary tally sits at or below 0.635 —
+while HAL (0.609) was already screen-rejectable at 0.65. Before any floor
+raise is calibrated, the 9/10 VTRS and CNK fill multiples must be pulled from
+that run's records and confirmed above the candidate threshold (the "keeps
+every historical fill" claim was last verified before those fills existed).
 
 ---
 
