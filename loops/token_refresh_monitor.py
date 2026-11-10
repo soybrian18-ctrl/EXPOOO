@@ -46,7 +46,11 @@ LOOP_CONFIG = {
     "LOOP_NAME": "token_refresh_monitor",
     "MAX_ITERATIONS": 1,                 # single check per day
     "ITERATION_TIMEOUT_SECONDS": 60,     # guardrail G2 (deterministic op)
-    "REFRESH_WARN_DAYS": 6.0,            # D6: warn threshold
+    # 6.0 -> 5.0 on 2026-11-10 (Phase 2 D11): with one check a day at 08:30 and
+    # CRITICAL at 6.5, a token authorized after ~08:30 jumped from HEALTHY (5.9d)
+    # straight to CRITICAL (6.9d) on the expiry morning -- the 6.0-6.5 WARN band was
+    # never sampled. 5.0 guarantees a WARN at least one full day before expiry.
+    "REFRESH_WARN_DAYS": 5.0,            # D6: warn threshold
     "REFRESH_CRITICAL_DAYS": 6.5,       # D6: critical escalation
     "REFRESH_LIFETIME_DAYS": REFRESH_TOKEN_LIFETIME_DAYS,  # ~7 days
     "LOG_FILE": "token_monitor.txt",
@@ -126,8 +130,8 @@ def main() -> int:
         if check.status != HEALTHY:
             if check.status == WARN:
                 msg = (
-                    f"Refresh token is {check.age_days:.1f} days old. "
-                    "Re-run setup_auth.py within 24h to keep the monitor online."
+                    f"Refresh token is {check.age_days:.1f} days old "
+                    f"(~{remaining:.1f}d left). Re-run setup_auth.py before it expires."
                 )
             elif check.status == CRITICAL and check.age_days is not None:
                 msg = (
