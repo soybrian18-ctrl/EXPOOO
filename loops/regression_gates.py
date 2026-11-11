@@ -62,6 +62,17 @@ ENTRY_OVERRIDES = {
     ("2026-08-14", "ASO"): 48.05,
 }
 
+# Schwab rebases a symbol's WHOLE daily history by a constant dollar amount for a
+# special distribution (ordinary dividends are not rebased). A decision price
+# recorded before the distribution has to be moved onto today's bar basis before
+# it is replayed; otherwise it sits above the candle structure and the replay
+# judges a different decision than the one taken.
+# Found 2026-11-11 (Phase 2 B1b): FRO's bars before its 2026-09-18 distribution
+# sit exactly $1.60 below the logged closes. At the recorded 38.60 this row
+# replayed REJECT rr=1.01; at 37.00 it replays APPROVE rr=3.543 with the stop at
+# 0.909 x ATR, the multiple recorded when the call was made.
+BASIS_SHIFTS = {"FRO": ("2026-09-18", -1.60)}     # ticker -> (distribution date, dollars)
+
 EXPECTATIONS = [
     ("2026-06-15", "COLL", "APPROVE", True,  "3R winner entry: stop 32.80, T1 38.40, 3.0:1"),
     ("2026-06-15", "MGNI", "HELD",    False, "pre-system position, exited +$54 at 16.50"),
@@ -267,6 +278,9 @@ def main() -> int:
         else:
             candles = truncate(hist, as_of)
             last = ENTRY_OVERRIDES.get((as_of, ticker)) or (candles[-1]["close"] if candles else None)
+            shift_date, dollars = BASIS_SHIFTS.get(ticker, ("", 0.0))
+            if (as_of, ticker) in ENTRY_OVERRIDES and as_of < shift_date:
+                last = round(last + dollars, 2)        # recorded price -> today's bar basis
             levels = compute_levels(candles, last)
         verdict, detail = new_verdict(levels, BALANCES[as_of])
 
