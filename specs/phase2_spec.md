@@ -2,8 +2,9 @@
 
 Status: **APPROVED 2026-11-10 (v3)**, with your changes: a 17.5% position cap,
 GICS sectors, the random-entry test as a pass rule, and the fixed Method 2
-extension. Section 9 records the approvals. Uncommitted until you give the
-word. The build has started with the read-only data checks (section 8, B1).
+extension. Section 9 records the approvals. Committed 2026-11-10 (0183433).
+The B1b commit adds the B1 and B1b results (section 8) and your 2026-11-11
+rulings (3.4, 3.5, 3.7, section 9).
 
 There is no live trading in Phase 2. The only orders are paperMoney orders you
 place yourself, and nothing in Phase 2 code can place an order (section 2).
@@ -72,11 +73,12 @@ the retired breakout mode in technicals.py.)
 | Module | Role |
 |---|---|
 | `params.py` | every number in this spec plus the NYSE calendar (holidays and 13:00 closes, 2021-2027); hash printed in every report and log line |
-| `bars.py` | Schwab daily candles. Explicit America/New_York date conversion, never machine-local time and never Central. B1 found older bars stamped 06:00 UTC and today's bar stamped 05:00 UTC; only New York time dates both correctly. Bars are keyed by that date, not by the raw timestamp. endDate=now and needExtendedHoursData=false on every call (the flag changed nothing in the B1 sample). A completed-session guard (section 4). Throttled to <=100 requests/minute under one shared lock (the app has about 120/min across all jobs) |
+| `bars.py` | Schwab daily candles. Explicit America/New_York date conversion, never machine-local time and never Central. B1 found two kinds of daily candle: a **final** bar is stamped midnight America/Chicago (06:00 UTC in winter, 05:00 UTC in summer; checked across both 2026 clock changes and on 2024 bars), and the **provisional** bar for the current session is stamped midnight America/New_York. Only New York time dates both correctly, so bars are keyed by that date, not by the raw timestamp. Overnight both candles for one date can come back in the same response: the final one is kept, and a date with only a provisional candle is not final (section 4). endDate=now and needExtendedHoursData=false on every call (the flag changed nothing in the B1 sample). A completed-session guard (section 4). Throttled to <=100 requests/minute under one shared lock (the app has about 120/min across all jobs) |
 | `universe.py` | symbol list plus security type, point-in-time eligibility, split factors for as-traded tests |
 | `events.py` | M2 earnings events (EDGAR header acceptance times, or the price/volume fallback) |
 | `signals.py` | M1/M2 tests, breadth, bracket construction. Calls `technicals.compute_levels` **unchanged** |
 | `fills.py` | the order state machine and pessimistic fill model (3.4). Used by the backtest, the forward tracker and the portfolio simulations |
+| `known_answer.py` | the experiment's 14 real stop-outs: the only orders the seal exemption lets through (3.7) |
 | `backtest.py` / `nightly.py` / `paper.py` | runners and the paper ledger |
 
 Contracts, each enforced by a test:
@@ -90,7 +92,7 @@ Contracts, each enforced by a test:
   evaluate trades open at their cutoff through the same `fills` function.
 - **Known-answer fills:** run at B1, before the freeze (3.4). The model must
   never be more optimistic than Schwab's real fills on the experiment's 14
-  stop-outs.
+  stop-outs. (Met by the 4-half-spread stop exit, 3.4.)
 - **No orders possible:** phase2 code sees only a wrapped client exposing
   price history, quotes, instruments, account numbers and order *reads*. A
   test fails if the package references place_order, replace_order,
@@ -182,6 +184,20 @@ test), never a whole-symbol drop based on future data.
 
 **Corporate actions.**
 - Dividends are not credited, which is slightly conservative.
+- **Schwab does not rebase bars for ordinary dividends, but it does for special
+  distributions** (B1b, checked against this project's own end-of-day logs).
+  Seven names that went ex-dividend after being held (AEO, F, RF, ASO, CCL,
+  VTRS, WWW) match the logged closes to the cent. FRO's bars before its
+  2026-09-18 distribution sit exactly $1.60 below the logged closes on all
+  eight sessions: a constant dollar shift, not a ratio.
+  - A dollar shift keeps every price difference, so ATR, risk and R are
+    unaffected. Percentage rules (the 3% gap, costs in bps) and the $5-100
+    band are off by the size of the shift for those names (stated).
+  - Any real fill replayed on today's bars must first be moved onto the bar
+    basis (the known-answer test does this for FRO).
+  - An open forward trade is moved the same way: `fills.shift` moves every
+    level and the entry price by the dollar amount and leaves ATR, risk and
+    the costs already paid alone. Splits use `fills.rescale`.
 - Schwab may lower GTC stop and limit prices by the dividend on ex-dates
   (FINRA 5330). The forward checks treat a level lowered by exactly the
   dividend as expected.
@@ -280,16 +296,20 @@ any close below low(t). M2 results are reported split by detector source.
 
 **Later sessions,** in order:
 1. open <= S: stopped at the **open** (gap-through);
-2. open >= P: target at P (no gap bonus);
+2. open >= P + 0.01: target at P (no gap bonus);
 3. low <= S: stopped at S;
 4. high >= P + 0.01: target at P.
 
-Resting limits need a 1-cent trade-through; stops and triggers fire on a touch.
+Resting limits need a 1-cent trade-through, at the open as well as intraday;
+stops and triggers fire on a touch. (Your ruling, 2026-11-11: an open exactly
+at P is not a fill at P. The bar can still trade through P later, under
+rule 4.)
 
 **Time exit.** The fill session is session 0. Full sessions start the next
 session, and half days count. A trade still open after session 40 is sold at
 the open of session 41, with the OCO rules applied first, so the 3R cap is
-exact.
+exact. (A session-41 open at P, or less than a cent above it, is not a gap
+past the target, so it is sold at that open. Net of its 2h it is below P.)
 
 **Costs** (every trade pays both legs; prices come from SEC 2022-2023 effective
 spread data, taken toward the upper end of each range):
@@ -303,19 +323,33 @@ spread data, taken toward the upper end of each range):
   | $5-25M | 20 bps |
   | < $5M | 40 bps |
 
-- **Opening fills pay 2h:** gap-up entries, gap-through stops and time exits,
-  because spreads are widest at the open.
-- **Limit-price fills** (C, P) also pay h. This is deliberately conservative.
+- **Opening fills pay 2h:** gap-up entries and time exits, because spreads are
+  widest at the open.
+- **Every stop exit pays 4h,** intraday or gap-through (your ruling,
+  2026-11-11). This replaces the open-fill slippage g x ATR of the approved
+  draft, which could not reach an intraday stop (section 8, B1b).
+  - **Why 4:** it is the smallest whole number of half-spreads that keeps the
+    model from being more optimistic than any of the experiment's 14 real
+    stop-outs (the known-answer contract, section 2). 3 misses CXM by one
+    cent. 4 ties CXM exactly: stop $5.00, h = 1 cent, real fill $4.96.
+  - **Why half-spreads and not a flat cent value** (your reasoning): the 14
+    stop-outs ran $5 to $47 and the universe runs to $100. A flat value
+    overcharges cheap names and undercharges pricier ones; half-spreads scale
+    with price and liquidity. P5's random entries pay the same cost, so only
+    the +0.20R floor feels the difference. (My note: P4's zero floors, and
+    A3/A4's subsets of the +0.20R floor, move with it too.)
+  - Exits are classified as gap or intraday from the bars, not from report
+    labels; ASO's "gap open" actually filled at 10:05.
+  - There is no separate slippage term, so "at the open" holds literally for
+    opening entries, gap-through stops and time exits.
+- **Limit-price fills** (C, P) pay h, and so does an intraday trigger entry.
+  Charging a limit fill at all is deliberately conservative.
 - Commissions are $0; SEC/TAF fees are ignored (about $0.01 per trade in the
   ledger).
-- **Open-fill slippage g x ATR,** calibrated at B1 before the freeze (D7): g is
-  the smallest multiple of 0.05 that makes the model non-optimistic on every
-  one of the experiment's 14 real stop-outs. Exits are classified as gap or
-  intraday from the bars, not from report labels; ASO's "gap open" actually
-  filled at 10:05. If g = 0, "at the open" holds literally.
 
 **Sensitivity rows (report-only):**
-- costs x 2;
+- costs x 2: every cost doubles, the 4h of stop exits included (your ruling,
+  2026-11-11);
 - a crash-bar bound: on stop sessions with open > S and low < S - 1 ATR, fill
   at the low, which bounds intraday halts and limit-down pauses.
 
@@ -326,10 +360,10 @@ exit = raw fill - cost. A fill above T or a gap through S shows up as a loss
 worse than -1R. Win = R > 0; loss = R <= 0.
 
 Unit-test anchor, a $20 stock in the $5-25M tier (h = 20 bps):
-- T 20.00, S 19.00, intraday trigger, intraday stop:
-  R = (19.00 - 0.038 - 20.04) / 1.00 = **-1.078**;
-- the same trade with a gap-through open at 18.80:
-  R = (18.80 - 0.0752 - 20.04) / 1.00 = **-1.3152**.
+- T 20.00, S 19.00, intraday trigger (h = 0.04), intraday stop (4h = 0.152):
+  R = (19.00 - 0.152 - 20.04) / 1.00 = **-1.192**;
+- the same trade with a gap-through open at 18.80 (4h = 0.1504):
+  R = (18.80 - 0.1504 - 20.04) / 1.00 = **-1.3904**.
 
 ### 3.6 Variants
 
@@ -349,6 +383,29 @@ across stop widths. The report shows the overlap.
    fills.py refuse to evaluate any session from 2025-01-02 to 2026-10-30.
    Those bars may be read only as look-back for post-go-live sessions. The
    forward tracker starts empty at go-live.
+   - In `fills.py` the seal is the default of `step`, `run` and the two
+     marking functions: a session in that window raises an error unless the
+     caller names an unseal. There are two
+     names, and a contract test lists every file that uses either:
+     - `UNSEALED_BY_PICK`, passed only by the backtest runner after it has
+       verified the committed pick;
+     - `KNOWN_ANSWER_REPLAY`, the one exemption. The known-answer contract
+       (section 2) replays the experiment's own 14 real stop-outs. Those are
+       April-September 2026 sessions, and the contract has to run before the
+       freeze. **Scope (your ruling, 2026-11-11): the 14 real fill records and
+       the bars those trades need,** entry day through exit day, 62 bars in
+       all. The records are listed in `known_answer.py`, and a test compares
+       that list with the stored fills. The exemption covers exact replays
+       only: the record's ticker, trigger = ceiling = the real entry, the real
+       stop, a far target (3 x the entry) so the replay can end only at the
+       real stop, and a one-session window on the real entry day. Any other
+       order or session inside the window is refused under it.
+     - Other reads of sealed-window bars before the pick, none of which
+       evaluates a signal, a fill or an R: each record's ATR and cost tier
+       were computed once from the sessions before its entry day; the data
+       checks in 3.1 and section 8 compare sealed-window closes with this
+       project's end-of-day logs; and the September gate-regression harness
+       replays its own 2026 decision dates.
 3. **IS** = fills dated 2022-01-03 to 2024-12-31. For the pick, IS trades still
    open at the 2024-12-31 close are marked there, net of exit cost, so 2025
    prices can't inform the pick. They are followed to completion only in the IS
@@ -407,7 +464,8 @@ A rule that can't be computed counts as failed.
     window expiry, a triggered-unfilled session, or breadth.
   - **Same trade count:** a draw that doesn't fill is redrawn, up to 20 times,
     so each run has as many filled trades as the pick.
-  - **The bar:** 1,000 seeded runs. P5 passes if the pick's average R is above
+  - **The bar:** 1,000 runs, seeded from the fixed base seed 20261110 (params).
+    P5 passes if the pick's average R is above
     the 95th percentile of the runs' average R.
   - **Where it applies:** like P2, in the IS **and** in the OOS. The IS test is
     part of pick eligibility (3.7), so a drift-only variant never spends the
@@ -498,12 +556,30 @@ caffeinate.
 - Retry slots at 19:30, 21:00 and 06:30. Each is a no-op once the session is
   complete.
 - **Completed-session guard:** only sessions whose bar is final are processed;
-  later candles are dropped. B1 found that an hour after the close the day's
-  bar is not yet the official close (AAPL at 16:58: bar close 348.562, official
-  close 348.51). The cutoff, and whether the close must be cross-checked
-  against the quote's regular-session last price, is set from the finality
-  samples (17:35, 18:35, 20:20 and the next morning) before the freeze. The
-  17:30 start time is provisional until then.
+  later candles are dropped.
+  - **B1 result** (samples on 2026-11-10 at 16:58, 17:35, 18:35 and 20:20 ET
+    and on 2026-11-11 at 01:10 ET; AAPL, NVDA, F, AMC, PBT, SPY):
+    - Through 20:20 ET the session's candle was still provisional. It was
+      stamped midnight New York. Its close was not the official close on 2 of
+      the 6 names (AAPL 348.562 against 348.51; NVDA 168.795633 against
+      168.89), and its volume kept growing with after-hours trading.
+    - By 01:10 ET a second candle for the same date was present, stamped
+      midnight Chicago like every older bar. Its close equals the official
+      close (the quote's regular-session last price) on all six names. Its
+      volume is the final figure, 0.02% to 1.5% above the 17:35 figure. Open,
+      high and low were identical in both candles.
+    - The provisional candle was still listed beside the final one at 01:10,
+      so the last candle in a response is not always the final one.
+  - **So a bar is final when it is stamped midnight America/Chicago.** The
+    guard tests the stamp, not the clock. A date whose only candle is stamped
+    midnight New York is not final; where both exist, the final one is used.
+    With that test the close needs no cross-check against the quote.
+  - **Still open:** the time of day the final candle appears (after 20:20 ET,
+    before 01:10 ET). It is being sampled on the evening of 2026-11-11, and
+    the run time is set from it before the freeze. Until then the 17:30 start
+    and the 19:30 and 21:00 retry slots are provisional: under this guard a
+    run that starts before the final candle exists reports INCOMPLETE and
+    retries.
 - **Completeness gate:** SPY and at least 99% of the prior session's eligible
   names must have a bar for today. Otherwise the run is INCOMPLETE: notify,
   retry, and never log "no session" on a calendar session.
@@ -516,10 +592,13 @@ caffeinate.
    "re-auth tonight" when needed.
 2. **Refresh bars** from each symbol's last cached date, with a 15-session
    overlap.
-   - **Basis-change detection:** a uniform ratio other than 1 across the overlap
-     means a split. The full history is re-pulled, the levels and share counts
+   - **Basis-change detection:** across the overlap, a uniform ratio other than
+     1 means a split, and a uniform dollar difference means a special
+     distribution (B1b: FRO, $1.60). The full history is re-pulled, the levels and share counts
      of open forward and paper trades are rescaled, CORP-ACTION is logged, and
-     a cancel-and-replace ticket is printed.
+     a cancel-and-replace ticket is printed. (A split rescales levels and
+     share counts by the ratio. A special distribution moves the levels by the
+     dollar amount and leaves share counts alone.)
    - A tracked symbol with no bar for 2 sessions gets a CUSIP lookup. A rename
      continues under the new symbol; otherwise the trade is closed at its last
      print, labeled DELISTED, and kept in the statistics.
@@ -530,7 +609,12 @@ caffeinate.
 4. **Signals for all 12 variants,** with breadth-blocked and unsizable signals
    logged too.
 5. **Forward tracker:** advance every forward trade with `fills.py`.
-   - Idempotent, keyed by session.
+   - Idempotent, keyed by session: each run rebuilds every tracked order from
+     its signal day on the stored bars. `fills.py` consumes a session once and
+     refuses a replay, so a bar that arrives late, or a corrected breadth
+     figure, is applied by the next rebuild and is never silently ignored. The
+     tracker therefore always equals what the backtest computes from the same
+     bars.
    - Report-only: a 1-minute-bar audit of each fill and exit session.
    - Report-only: regular-hours bid/ask snapshots for signaled, pending and
      open names, to check the spread model. These need the Mac awake during
@@ -781,9 +865,11 @@ counts as a fail.
   - every fill branch: opening fill; intraday trigger; triggered-unfilled with
     no fill and cancel; fill at C on a trade-through, both target-credit
     variants; entry-day stop; gap-through; gap past the target; both levels
-    touched; the trade-through boundaries (high = P, low = C); time exit with
+    touched; the trade-through boundaries (high = P, low = C, open = P and
+    open = P + 0.01); time exit with
     the OCO first on session 41; replacement; invalidation; breadth cancel;
-    missing-bar gap; split rescale during an open trade;
+    missing-bar gap; split rescale during an open trade; special-distribution
+    shift; the seal and the exact scope of its one exemption;
   - cost arithmetic and the 3.5 anchors;
   - the cent-rounding direction;
   - the calendar and the completed-session guard.
@@ -798,8 +884,8 @@ counts as a fail.
 
 Every code milestone is shown as a diff before commit.
 
-- **B0 (now).** Spec v3, the Phase 2 block in trading-rules.md and the token
-  monitor change, as one diff for your commit word.
+- **B0 (done, commit 0183433).** Spec v3, the Phase 2 block in
+  trading-rules.md and the token monitor change.
 - **B1. Data-contract checks (read-only; started 2026-11-10).** Done:
   - paperMoney is not visible to the API (section 5);
   - daily history is deep enough: 1,471 AAPL bars from 2021-01-04, and a 1990
@@ -809,20 +895,93 @@ Every code milestone is shown as a diff before commit.
   - delisted names are missing (3.1);
   - `assetSubType` is useful but incomplete (3.1);
   - quotes: `regularMarketLastPrice` is the 16:00 close and `closePrice` is the
-    previous close. `lastEarningsDate` exists and is kept only as an audit
-    field;
+    previous close, less any dividend going ex that day (F on 2026-11-10: 12.37
+    against a 12.52 bar close, its $0.15 dividend), so it is not used as a
+    price check. `lastEarningsDate` exists and is kept only as an audit field;
   - EDGAR: the filing index carries item codes and SIC codes. Acceptance times
     in the JSON matched the filing headers on four Apple earnings 8-Ks; the
     headers stay the source.
 
+  - final bars carry the official close: this project's 4:15 pm end-of-day
+    marks match today's bar closes to the cent on 12 of 13 names held (FRO is
+    the special-distribution case in 3.1).
+
+  - bar finality: a final bar is stamped midnight America/Chicago and carries
+    the official close and the final volume. Overnight a second, provisional
+    candle for the same date (stamped midnight New York, with an unofficial
+    close) can sit beside it (section 4).
+
   Still open in B1:
-  - **bar finality** (section 4): samples tonight and tomorrow morning;
-  - whether a bar's timestamp or values are rewritten overnight;
+  - **when the final bar appears** (after 20:20 ET, before 01:10 ET): sampled
+    on the evening of 2026-11-11. It sets the nightly run time;
   - your golden paperMoney probe (section 5).
 - **B1b.** `fills.py` and its unit tests (diff first), then the known-answer
-  calibration on the 14 real stop-outs, which sets g.
-- **B2. Freeze:** spec + params (with g and the bar-finality cutoff) + code
-  hash, committed before any IS number exists.
+  calibration on the 14 real stop-outs.
+  - **Result (2026-11-10):** all 14 exits replay on the right day, 12 intraday
+    and 2 gap-throughs (AR, RRC), classified from the bars.
+  - Under the approved draft's g x ATR rule: with g = 0 the model is optimistic
+    on RRC by 2.4 cents; g = 0.05 fixes it.
+  - **No value of g fixes CXM:** an intraday stop at $5.00 that really filled at
+    $4.96, 3 cents below the model's S - h. Open-fill slippage can't reach an
+    intraday fill, so the approved calibration can't satisfy the known-answer
+    contract. **Ruled 2026-11-11: every stop exit pays 4 half-spreads (3.4),
+    and g is gone.** With it the model is below the real fill on 13 of the 14
+    and ties CXM.
+  - **Review (2026-11-10 and 11-11).** Four independent reviewers (entry
+    rules, holding rules, costs and params, mutation testing) checked
+    `fills.py` against this spec.
+    - **The code matched the spec.** No fill, exit, price, cost or R differed
+      from the text. Their spec-derived oracles agreed with the code as it
+      stood before your 11-11 rulings on 5.9 million cases with no mismatch,
+      and 43 hand traces passed.
+    - **The tests were too weak.** 163 of the reviewers' roughly 540
+      deliberately broken copies of the code passed the first suite, because
+      every test order had ATR = T - S = $1.00 and cent-grid prices.
+    - **Changes made from the review:**
+      - tests: 87 -> 206, on two fixtures (the second has ATR 0.40, T - S 0.60
+        and a 5 bps tier) and with sub-cent prices;
+      - the OOS seal in `fills.py`, with the known-answer exemption (3.7);
+      - sessions are consumed once, in order, and the tracker rebuilds from
+        the signal day (section 4);
+      - prices compared in millionths of a dollar (B1 saw six-decimal bars);
+      - `fills.shift` for special distributions (3.1);
+      - no silent defaults or inputs: breadth and params must be passed, and a
+        bad tier, a non-finite number, a stale order or a close that an open
+        trade can't have is an error;
+      - the crash-bar row follows the text literally (open > S);
+      - 13 spec numbers that had no field in `params.py` now have one, and a
+        test compares every field with this spec.
+    - **After those changes, before your rulings:** 889 broken copies were
+      run against the tests of the time: the 508 of the reviewers' that still
+      applied, 59 rewritten by hand for the lines that changed, and 322
+      generated mechanically. 867 were caught; the 22 that passed were each
+      checked.
+    - **Side finding:** the September gate-regression harness had gone red on
+      one hard row (FRO 2026-07-29) for the same reason as the known-answer
+      fixture: it replayed a recorded price of 38.60 on bars Schwab has since
+      rebased by $1.60. With the price moved onto the bar basis the row
+      replays as recorded (stop 0.909 x ATR) and the harness is 16/16 again.
+  - **Your rulings (2026-11-11), applied in 3.4, 3.5 and 3.7:**
+    1. stop exits: 4 half-spreads on every stop exit, not a flat cent value;
+    2. the seal exemption: yes, scoped to the 14 real fill records and the
+       bars those trades need;
+    3. an open exactly at P: the trade-through at P + 0.01 is required;
+    4. the "costs x 2" row doubles slippage as well as spreads. With ruling 1
+       the stop-exit charge is itself in half-spreads, so the row doubles
+       every cost.
+    After these, the Phase 2 tests pass, the known-answer contract among them.
+    A second independent review then checked the rulings as applied
+    (2026-11-11). Five of its six agents reported and found no blocker:
+    spec consistency, test quality, a new spec-text cost oracle (no mismatch
+    on 500,000 scenarios and 2.8 million boundary bars), a boundary grid and
+    a mutation run. The gaps they found were in the tests (rule 2 at exactly
+    P + 0.01, costs x 2 on limit fills, the seal on a trade already open, the
+    exemption's exact scope) and are closed: 240 Phase 2 tests. The sixth
+    agent, an attack on the seal exemption, was stopped unfinished when the
+    usage limit was reached; the exemption check was tightened from the other
+    agents' findings.
+- **B2. Freeze:** spec + params (with the bar-finality cutoff) + code hash,
+  committed before any IS number exists.
 - **B3. Pulls:** the directory, security types, bars from 2021-01-04, the
   yfinance split table, EDGAR 8-K Item 2.02 headers and SIC codes. About 4-5
   hours of machine time, most of it the paced EDGAR header pull.
@@ -847,8 +1006,8 @@ Every code milestone is shown as a diff before commit.
 | D4 | M1 mechanics | Touch rule; trigger 1 cent over the signal-day high; ceiling +0.25 ATR; 3-session window |
 | D5 | M2 earnings dates | SEC 8-K Item 2.02 with filing-header times; price/volume fallback for foreign issuers. The contact you supplied lives in `.env` only and is never committed |
 | D6 | Universe and splits | Security types plus directory rules; MLPs, royalty trusts and SPACs excluded; split table via yfinance; survivorship flagged |
-| D7 | Fills and costs | The model in 3.4; g calibrated on the 14 real stop-outs before the freeze |
-| D8 | Protocol | Fill-date windows; OOS sealed in code; pick eligibility; sealed OOS after 12-30; bug rules |
+| D7 | Fills and costs | The model in 3.4, calibrated on the 14 real stop-outs before the freeze. **Ruled 2026-11-11: every stop exit pays 4 half-spreads; no separate slippage; a gap past the target needs P + 0.01; the costs x 2 row doubles every cost** |
+| D8 | Protocol | Fill-date windows; OOS sealed in code; pick eligibility; sealed OOS after 12-30; bug rules. **Ruled 2026-11-11: one seal exemption, for exact replays of the 14 known-answer records and the bars they need** |
 | D9 | Paper process | The ledger is the record; 2 slots per method; **SIC codes mapped to the 11 GICS sectors**; paper switches to the IS picks in December (asked again then) |
 | D10 | Part 4 | Analog-window band plus the count rule; Check 3 = placement + activation; funding per method; **M2 extends to 2027-03-12 if short of the count, which is never lowered** |
 | D11 | Operations | Nightly run plus retries; token fail-closed; live-account alarm; token-monitor warning at 5.0 days (**applied 2026-11-10**) |
