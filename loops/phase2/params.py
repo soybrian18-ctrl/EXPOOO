@@ -1,10 +1,12 @@
 """Phase 2 parameters -- every number in specs/phase2_spec.md, in one place.
 
-STATUS: NOT FROZEN. One value is still unset and blocks the freeze (spec 3.7
-step 1, build step B2):
-  * ``bar_final_cutoff_et`` -- the earliest time the nightly may expect final
-    bars (spec 4). B1 found that a bar is final when it is stamped midnight
-    America/Chicago; the time of day that stamp appears is still being sampled.
+STATUS: NOT FROZEN (spec 3.7 step 1, build step B2). Every value is set. The
+night-schedule and drill fields were ruled by the owner on 2026-11-12, so
+PENDING_RULING is empty and unset() reports nothing; it stays as the mechanism
+for any later proposal. The schedule's times (spec 4) are operational: they
+enter no backtest number. B1 measured final bars around midnight ET
+(2026-11-11/12); further nights of sampling show whether every name is final by
+the recheck's 01:00 start.
 The stop-exit cost was ruled on 2026-11-11 (spec 3.4): every stop exit pays 4
 half-spreads, the smallest whole number that keeps the model from being more
 optimistic than any of the experiment's 14 real stop-outs. It replaces the
@@ -23,7 +25,6 @@ import dataclasses
 import hashlib
 import json
 from dataclasses import dataclass
-from typing import Optional
 
 
 @dataclass(frozen=True)
@@ -137,10 +138,30 @@ class Params:
     feasibility_spans: tuple = (("2022-11-23", "2023-01-13"), ("2023-11-23", "2024-01-12"))
 
     # --- 4 nightly ----------------------------------------------------------
-    nightly_run_et: str = "17:30"          # PROVISIONAL (spec 4) until the bar-finality decision
-    nightly_retry_et: tuple = ("19:30", "21:00", "06:30")
-    bar_final_cutoff_et: Optional[str] = None        # UNSET until the bar-finality samples are in
-    completeness_min: float = 0.99         # SPY and >= 99% of the prior session's eligible names
+    # RULED 2026-11-12 by the owner: every field from evening_scan_et to drill_window_sessions. The owner
+    # instructed an evening scan on provisional bars, an overnight recheck on final bars, a pre-open alert and
+    # a missed-window alert (2026-11-11); these times, the retries and the watchdog carry that out, as
+    # proposed and ruled on 2026-11-12.
+    # night schedule (spec 4, step 1): one night job per session, plus a watchdog
+    evening_scan_et: str = "17:30"         # the evening scan on provisional bars
+    evening_retry_et: tuple = ("18:15", "19:00")
+    recheck_start_et: str = "01:00"        # the overnight recheck on final bars (the run of record, ruled 2026-11-12)
+    recheck_every_min: int = 30            # ... retried this often ...
+    recheck_last_et: str = "07:30"         # ... until this time; then ...
+    recheck_late_every_min: int = 60       # ... this often through the day while the run of record is incomplete
+    alert_by_et: str = "08:30"             # the morning message
+    watchdog_evening_et: str = "19:30"     # "the evening scan missed its window"; an evening sample started
+                                           # after this time is LATE (sample_bars.LATE_AFTER)
+    watchdog_morning_et: str = "08:00"     # "the recheck missed its window"
+    watchdog_every_min: int = 60           # the watchdog also runs at login and this often
+    # drill tickets (spec 5; the construction rules, the ask term included, ruled 2026-11-12)
+    drill_entry_atr: float = 0.10          # T = max(max(close, AH last) + max(0.10 ATR, $0.05), AH ask + 0.01), rounded up (spec 5)
+    drill_entry_min: float = 0.05
+    drill_window_sessions: int = 3         # the drill's entry window, from the NYSE calendar
+    completeness_min: float = 0.99         # SPY and >= 99% of the prior session's eligible names have the session's
+                                           # candle (evening) or its final candle (recheck, which also needs every
+                                           # name with a ticket, a pending or an open paper order); its use by the
+                                           # evening run was ruled 2026-11-12
     token_min_hours: float = 3.0
     request_limit_per_min: int = 100
     refresh_overlap_sessions: int = 15     # bars are re-pulled with this overlap (basis-change detection)
@@ -152,6 +173,11 @@ class Params:
 
 PARAMS = Params()
 
+# Fields proposed but not yet ruled on by the owner: these block the freeze (unset() lists them). Empty since
+# the owner's rulings of 2026-11-12 (the night-schedule and drill fields). A later proposal adds its names here;
+# its ruling removes them (and changes any value the ruling changes) in the same commit.
+PENDING_RULING: tuple = ()
+
 
 def params_hash(params: Params = PARAMS) -> str:
     """SHA-256 of the canonical parameter set; printed in every report and log line."""
@@ -160,5 +186,7 @@ def params_hash(params: Params = PARAMS) -> str:
 
 
 def unset(params: Params = PARAMS) -> list[str]:
-    """Names of values that still block the freeze."""
-    return [f.name for f in dataclasses.fields(params) if getattr(params, f.name) is None]
+    """Names of values that still block the freeze: any value that is None, then every field still awaiting
+    the owner's ruling (PENDING_RULING, empty since 2026-11-12)."""
+    missing = [f.name for f in dataclasses.fields(params) if getattr(params, f.name) is None]
+    return missing + [n for n in PENDING_RULING if n not in missing]

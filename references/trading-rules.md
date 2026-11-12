@@ -78,7 +78,7 @@ Universe and entries:
 
 - Entries come only from the Phase 2 nightly scan: Method 1 (pullback to an aged shelf) and Method 2 (post-earnings gap continuation), exactly as specified. The web gates (free cash flow, catalyst, moat and revenue, excluded sectors) are not used in Phase 2, so what is paper-traded is what is tested.
 
-- Entry order: buy stop-limit, trigger one cent above the signal day's high, limit at the ceiling (trigger + 0.25 x ATR), trigger on the last trade, with a first-triggers-OCO bracket of a sell limit at the target and a sell stop at the stop. All three legs GTC.
+- Entry order: buy stop-limit, trigger one cent above the signal day's high, rounded up to the cent, limit at the ceiling (trigger + 0.25 x ATR), trigger on the last trade, with a first-triggers-OCO bracket of a sell limit at the target and a sell stop at the stop. All three legs GTC.
 
 - Stop: the method's own structural stop, moved lower if needed so it is at least k x ATR(14) below the trigger (paper default k = 1.5). Method 1's structural stop is below a tested shelf at least 5 sessions old. Method 2's is below the gap-day low; this is an explicit exception to the 5-session anchor rule. The 0.65 x ATR minimum is subsumed.
 
@@ -91,6 +91,14 @@ Process:
 - Paper tickets replace the 9-section report and the "approved" gate for paper orders. Every ticket shows the sizing math, deployment and cash after the order, positions after the order, and any second-in-sector flag.
 
 - Every paper placement is verified with the 8-check. An order whose quantity does not match the $1,500 sizing fails.
+
+- Drill ticket (the user's instruction, 2026-11-11): "I want to rehearse the order mechanics in paperMoney while the scan gets built." One drill ticket, DRILL-2026-11-11-01, from the 2026-11-11 close: a liquid name, a buy stop-limit entry near the market so it likely fills the next session, and a 1st-triggers-OCO bracket with a sell limit target and a sell stop, all GTC, sized on the $1,500 basis. DRILL-2026-11-11-01 was never placed (the user, 2026-11-12: "Drill: not placed. Issue a fresh ticket from tonight's close."), so DRILL-2026-11-12-01, from the 2026-11-12 close, replaces it under the same instruction. The drill ticket is not a scan signal; it is the user's explicit exception to "entries come only from the Phase 2 nightly scan". The 8-check is run on both screenshots (after placement and after the fill), "including that the bracket goes live correctly after the fill". It counts in the 8-check record (Check 3) and is kept out of the paper P&L ledger. How drills are built, that they are also kept out of the paper book and the forward log, and how later drills count were ruled by the user on 2026-11-12 and are in specs/phase2_spec.md section 5.
+
+- Nightly timing (the user's instruction, 2026-11-11): "I place orders in the evening, so design for that." The scan runs on provisional bars in the evening. A recheck against the final bars runs overnight, and the user is alerted before the open if any ticket changed or disappeared. The user is also alerted if a nightly run misses its window. Before the evening scan is relied on, how often provisional bars flip a signal is measured across the sampled nights. How this is carried out (the schedule, the run of record, the ticket states, the watchdog, and when the evening tickets are relied on) was ruled by the user on 2026-11-12 and is in specs/phase2_spec.md section 4.
+
+- Flip report acceptance bar (the user's words, 2026-11-12): "Flip report acceptance bar, fixed now before the report lands: a method gets evening tickets only if it had zero flips on every sampled night, in either direction (a ticket changed, disappeared, or appeared only on final bars). Judge M1 and M2 separately. Any flip keeps that method on recheck tickets."
+
+- Statistics and the sealed window (the user's standing rule, 2026-11-12): "New standing rule: before you compute any statistic, state its session range. If it uses 2025-01-02 to 2026-10-30 for anything beyond look-back, stop and ask me first."
 
 - Breadth filter (paper default on): no new entry while fewer than half the universe trades above its 50-session average.
 

@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Phase 2 flip measurement: the flip-measurement sampler's night job (specs/phase2_spec.md section 4, step 4),
+  not the step-1 nightly scan. TEMPLATE: installing it was ruled by the owner on 2026-11-12; the owner installs it.
+  To deploy:
+    1. Replace every {{PROJECT_ROOT}} with the absolute project path.
+    2. Copy to ~/Library/LaunchAgents/com.stockmonitor.phase2barsample.night.plist
+    3. launchctl load ~/Library/LaunchAgents/com.stockmonitor.phase2barsample.night.plist
+  Read-only market data (the symbol directory, quotes, daily candles and a few names' 1-minute bars) through
+  loops/phase2_sample.py, which builds a Schwab client for each pull and hands the loops/phase2 package a
+  read-only wrapper. No account or order endpoint is called.
+  Starts weekdays at 17:20 local time (the Mac runs on New York time) and at load (RunAtLoad: a login or a
+  restart starts it, so a Mac that was off is noticed). launchd keeps one process per label. The job keys itself
+  to a session, samples the evening at 17:30 (retried at 18:15 and 19:00 while FAILED or INCOMPLETE) and pulls
+  the finals at 00:30, 01:00, 01:30, 04:30, 06:30 (a full re-pull) and 07:30. A night whose last pull ends after
+  the next session's 17:20 rolls over into that night itself, since launchd dropped that launch (at most 7
+  passes, then a notification). Each pass first records MISSED-NIGHT for recent sessions with no evening sample,
+  and makes one catch-up final pull for recent evenings whose overnight pulls never completed: before the evening
+  sample on a start before 17:20, after it on a start at 17:20 or later (this launch, a late start, a roll-over).
+  A pass that wakes on the next session's evening leaves its remaining pulls to that night's catch-up. A night
+  already complete (a holiday launch, a weekend login) gets nothing more.
+  Power: the runner holds the idle-sleep assertion itself (caffeinate -i -w on its own process) from 17:20 to the
+  night's last pull, so there is no caffeinate here and a daytime start waits without keeping the Mac awake.
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.stockmonitor.phase2barsample.night</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>{{PROJECT_ROOT}}/loops/run.sh</string>
+    <string>loops/phase2_sample.py</string>
+    <string>night</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>{{PROJECT_ROOT}}</string>
+
+  <!-- Weekdays 1-5 (Monday to Friday) at 17:20 local. -->
+  <key>StartCalendarInterval</key>
+  <array>
+    <dict><key>Weekday</key><integer>1</integer><key>Hour</key><integer>17</integer><key>Minute</key><integer>20</integer></dict>
+    <dict><key>Weekday</key><integer>2</integer><key>Hour</key><integer>17</integer><key>Minute</key><integer>20</integer></dict>
+    <dict><key>Weekday</key><integer>3</integer><key>Hour</key><integer>17</integer><key>Minute</key><integer>20</integer></dict>
+    <dict><key>Weekday</key><integer>4</integer><key>Hour</key><integer>17</integer><key>Minute</key><integer>20</integer></dict>
+    <dict><key>Weekday</key><integer>5</integer><key>Hour</key><integer>17</integer><key>Minute</key><integer>20</integer></dict>
+  </array>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>StandardOutPath</key>
+  <string>{{PROJECT_ROOT}}/logs/launchd_phase2barsample.out</string>
+  <key>StandardErrorPath</key>
+  <string>{{PROJECT_ROOT}}/logs/launchd_phase2barsample.err</string>
+</dict>
+</plist>

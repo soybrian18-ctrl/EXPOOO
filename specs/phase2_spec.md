@@ -4,7 +4,55 @@ Status: **APPROVED 2026-11-10 (v3)**, with your changes: a 17.5% position cap,
 GICS sectors, the random-entry test as a pass rule, and the fixed Method 2
 extension. Section 9 records the approvals. Committed 2026-11-10 (0183433).
 The B1b commit adds the B1 and B1b results (section 8) and your 2026-11-11
-rulings (3.4, 3.5, 3.7, section 9).
+rulings (3.4, 3.5, 3.7, section 9). The seal-hardening commit (030af69,
+2026-11-12, committed with your word) changes no spec text.
+
+This version also records your 2026-11-11 instructions on the nightly timing
+and the drill (D11, D12), and your 2026-11-12 rulings: sealed bars as
+look-back for indicators (3.7, D8), the Mac precondition (section 4,
+step 3), and your rulings on commit B. Your words (2026-11-12): "Rulings on
+commit B: yes on items 1 to 8 as recommended. DRILL-2026-11-12-01 counts both
+ways. Off-machine alert: not now. Put it on the January go/no-go list." So
+everything commit B proposed is ruled 2026-11-12 and written as rules where
+it appears:
+- section 2: commit B's module rows and the `bars.py` retry of truncated
+  responses;
+- 3.1 and D6: the universe rules for B3/B4: BDCs are in, known by their SEC
+  814- file number; MLPs are excluded by the approved K-1 criterion, not by
+  name; SPACs are also identified by SIC code 6770;
+- 3.4: T rounded up to the cent, which amends 3.2 (twice), P5, D4 and the
+  entry-order line of trading-rules.md;
+- section 4: the night job and the watchdog (steps 1 and 2), the ticket
+  states, the freeze with the night schedule, the sampler, its schedule and
+  installing its launchd job (step 4), the flip report and what it decides,
+  LATE nights out of the pooled numbers, the 1-minute bars kept, how go-live
+  is recorded, and the ticket's sizing-line format;
+- section 5: the drill's construction rules and end lines, placed or not
+  placed, how later drills count, a drill's exclusion from the paper book and
+  the forward log, the provisional reading of items 3 and 7, items 5 and 8,
+  the after-fill re-read, the interim scoring of DRILL-2026-11-12-01, the
+  activation-check wording, simulator artifacts and the two records.
+  DRILL-2026-11-12-01 counts both ways in Check 3 (section 6);
+- the off-machine alert is not built now and is on the January report's list
+  (section 6).
+Two more rulings of yours, 2026-11-12: the flip report's acceptance bar
+(section 4, step 4, "What it decides") and a standing rule on statistics
+(3.7). Nothing in this spec awaits your ruling. Still to come, as scheduled:
+the flip report itself and your acceptance of it (section 4, step 4), the
+golden probe (section 5), the December question on paper picks (D9) and the
+January decision (section 6). Besides factual records, two edits of approved
+text are not rulings: 3.7 step 2's description of the seal is brought up to
+date with commit A (030af69) and commit B (no rule changes), and section 9's
+heading now names the rulings its rows carry.
+
+On 2026-11-12 you also said: "Drill: not placed. Issue a fresh ticket from
+tonight's close." So DRILL-2026-11-11-01 is void and does not count, and
+DRILL-2026-11-12-01 replaces it (section 5, D12).
+
+3.7 also discloses a second statistic aggregated over sealed sessions, found
+after your ruling: the first count behind the 3.4 T-rounding rule (then a
+proposal; ruled 2026-11-12). It is replaced by the same count over the eight
+post-seal sessions and is not repeated.
 
 There is no live trading in Phase 2. The only orders are paperMoney orders you
 place yourself, and nothing in Phase 2 code can place an order (section 2).
@@ -73,19 +121,33 @@ the retired breakout mode in technicals.py.)
 | Module | Role |
 |---|---|
 | `params.py` | every number in this spec plus the NYSE calendar (holidays and 13:00 closes, 2021-2027); hash printed in every report and log line |
-| `bars.py` | Schwab daily candles. Explicit America/New_York date conversion, never machine-local time and never Central. B1 found two kinds of daily candle: a **final** bar is stamped midnight America/Chicago (06:00 UTC in winter, 05:00 UTC in summer; checked across both 2026 clock changes and on 2024 bars), and the **provisional** bar for the current session is stamped midnight America/New_York. Only New York time dates both correctly, so bars are keyed by that date, not by the raw timestamp. Overnight both candles for one date can come back in the same response: the final one is kept, and a date with only a provisional candle is not final (section 4). endDate=now and needExtendedHoursData=false on every call (the flag changed nothing in the B1 sample). A completed-session guard (section 4). Throttled to <=100 requests/minute under one shared lock (the app has about 120/min across all jobs) |
+| `bars.py` | Schwab daily candles. Explicit America/New_York date conversion, never machine-local time and never Central. B1 found two kinds of daily candle: a **final** bar is stamped midnight America/Chicago (06:00 UTC in winter, 05:00 UTC in summer; checked across both 2026 clock changes and on 2024 bars), and the **provisional** bar for the current session is stamped midnight America/New_York. Only New York time dates both correctly, so bars are keyed by that date, not by the raw timestamp. Overnight both candles for one date can come back in the same response: the final one is kept, and a date with only a provisional candle is not final (section 4). endDate=now and needExtendedHoursData=false on every call (the flag changed nothing in the B1 sample). A completed-session guard (section 4). An evening mode reads the provisional candle with the quote's official close, marked PROVISIONAL (section 4) *(ruled 2026-11-12, with the section 4 schedule)*. A response that carries no prior history is TRUNCATED and retried, never read as a missing bar (B1: 19 such responses in 42 seconds on 2026-11-12) *(ruled 2026-11-12)*. Throttled to <=100 requests/minute under one shared lock (the app has about 120/min across all jobs) |
 | `universe.py` | symbol list plus security type, point-in-time eligibility, split factors for as-traded tests |
 | `events.py` | M2 earnings events (EDGAR header acceptance times, or the price/volume fallback) |
-| `signals.py` | M1/M2 tests, breadth, bracket construction. Calls `technicals.compute_levels` **unchanged** |
+| `signals.py` | M1/M2 tests and breadth; brackets through `orders.py`. Calls `technicals.compute_levels` **unchanged** |
+| `orders.py` | pure order levels T, C, S, P, the $1,500-basis share count N, and the ticket lines; `signals.py` and the ticket writer call it |
 | `fills.py` | the order state machine and pessimistic fill model (3.4). Used by the backtest, the forward tracker and the portfolio simulations |
 | `known_answer.py` | the experiment's 14 real stop-outs: the only orders the seal exemption lets through (3.7) |
+| `sample_bars.py` | the flip-measurement sampler (I/O): the symbol directory (two public Nasdaq Trader files, fetched by the package itself over HTTPS) and, through a read-only wrapper built by `loops/phase2_sample.py`, the runner outside the package, quotes and daily and 1-minute bars (section 4, step 4) |
+| `compare_bars.py` | the flip measurement (read-only; it writes a report, never a ticket or an order). Its signal level is an interim second implementation of eligibility, breadth, M1 and M2, behind its own look-back guard, until the B4 replay through `signals.py` |
 | `backtest.py` / `nightly.py` / `paper.py` | runners and the paper ledger |
+
+*The `orders.py`, `sample_bars.py` and `compare_bars.py` rows, and "brackets
+through `orders.py`", come with commit B (2026-11-12), ruled yes on
+2026-11-12. In them, T's rounding is the 3.4 rule and the sampler's schedule
+is the section 4 schedule, both ruled 2026-11-12. The sampler's own constants
+(its pull times and 06:30 full pull, the 10-minute lead, the 7-pass cap, the
+10-session look-back, the stand-in calendar, the Method 2-like strata) live in
+`sample_bars.py`, not `params.py`: they enter no backtest number, belong to the
+section 4 schedule and are frozen with the code hash.*
 
 Contracts, each enforced by a test:
 - **Parity:** `nightly.py --as-of DATE` on stored bars reproduces the
   backtest's signals, orders and order states for DATE exactly, all 12
-  variants. Dates are drawn from the IS and from post-go-live sessions only
-  (OOS seal, 3.7).
+  variants. Dates are drawn from the IS and from post-go-live sessions only (OOS seal, 3.7; the approved limit, kept although your 2026-11-12 ruling would also allow sessions after 2026-10-30). Parity is a property of the run of record, the overnight
+  recheck on final bars (section 4); the evening scan's provisional outputs
+  are compared with the run of record, not with the backtest. *(Ruled
+  2026-11-12, with the section 4 schedule.)*
 - **Window invariance:** `compute_levels` on the full history equals
   `compute_levels` on the trailing 120 bars, which both paths pass.
 - **One cutoff evaluation:** the forward window and every analog band window
@@ -135,8 +197,21 @@ codes).
   ETF = N, the NASDAQ-symbol suffix rules (`- + = ^ # $ * % ~`), a descriptor
   rule on the security name, and a name rule for ETNs flagged ETF = N.
 - Excluded by name (approved D6): MLP units and royalty trusts (they issue
-  K-1 tax forms) and SPAC shares ("Acquisition Corp").
+  K-1 tax forms) and SPAC shares ("Acquisition Corp"). **Your ruling of
+  2026-11-12, for B4:** an MLP is excluded by that approved K-1 criterion, not
+  by its name, so PAGP and HESM, which issue 1099s, are in; SPACs are also
+  identified by SIC code 6770.
 - Every excluded symbol is logged with its reason.
+- **BDCs (your ruling of 2026-11-12, for B3/B4):** business development
+  companies (BDCs) are in the universe. A BDC is known by its SEC file number
+  (814-), checked at B3/B4, not by its name.
+- *The stand-in universe* (section 4, step 4) keeps its own name rules until
+  B4. It keeps BDCs listed under Nasdaq's "Closed End Fund" label (ARCC and
+  others) and NYSE-listed BDCs, which pass as ordinary common stock (MAIN,
+  OBDC, FSK and others). Its fund rule excludes BDCs whose names say "Fund":
+  BXSL, FSSL, MSDL and MSIF (the first three are BDCs by general knowledge,
+  not yet checked against their SEC filings), and its exclusion records say
+  so. Its MLP and SPAC rules are name rules too.
 
 **As-traded eligibility on day t** (critical review finding)
 - Rules: as-traded close(t) between $5 and $100; as-traded average volume over
@@ -210,14 +285,16 @@ Common to both methods:
   per ticker per variant. A new signal replaces an unfilled pending order and
   starts its own window; with an open position, a new signal is ignored.
 - Eligibility is tested on the signal day.
-- Both methods enter on a **buy stop 1 cent above the signal day's high**. The
+- Both methods enter on a **buy stop 1 cent above the signal day's high,
+  rounded up to the cent** (3.4, your ruling of 2026-11-12). The
   methods differ only in what qualifies the signal day, and exits are identical
   (3.4).
 - ATR = ATR14 exactly as `compute_levels` computes it, at the signal close.
 
 **M1: pullback to an aged shelf (current technical rules + a touch rule)**
 
-`L = compute_levels(bars[t-119..t], last = T)`, with T = high(t) + $0.01.
+`L = compute_levels(bars[t-119..t], last = T)`, with T = high(t) + $0.01
+(T rounded up to the cent, ruled 2026-11-12 in 3.4).
 Day t qualifies if:
 1. `L.valid_setup` (no knife; aged shelf/pivot >=5 sessions old; support held);
 2. `L.atr_floor_ok` (structural risk >= 0.65 ATR, C8);
@@ -267,7 +344,14 @@ any close below low(t). M2 results are reported split by detector source.
 ### 3.4 Order state machine, fills and costs
 
 **Order** (cents; rounding always conservative):
-- trigger **T** = high(t) + 0.01;
+- trigger **T** = high(t) + 0.01, rounded up to the cent (your ruling of
+  2026-11-12), the high read at the millionth (the resolution fills.py
+  compares at). About a quarter of Schwab's daily highs carry sub-cent digits
+  (3,648 of 15,395 final candles, 23.7%, over the eight sessions
+  11-02..11-11); rounding a buy stop up keeps it at least a cent above the
+  high, at that resolution. The ruling amends T wherever this spec says one
+  cent above the high: 3.2 (twice), P5 and D4, and the entry-order line of
+  trading-rules.md.
 - ceiling **C** = floor(T + 0.25 ATR);
 - stop **S** = floor(min(S0, T - k x ATR)) (D2);
 - target **P** = ceil(T + 3(T - S)) (D3);
@@ -381,12 +465,65 @@ across stop widths. The report shows the overlap.
    hash, logged) is allowed only before the first IS number.
 2. **OOS seal in code.** Until a committed `pick.json` exists, signals.py and
    fills.py refuse to evaluate any session from 2025-01-02 to 2026-10-30.
-   Those bars may be read only as look-back for post-go-live sessions. The
-   forward tracker starts empty at go-live.
+   Those bars may be read as look-back to compute indicators for any session
+   after 2026-10-30 (your ruling of 2026-11-12, below). The forward tracker
+   starts empty at go-live.
+   - **Look-back ruling (yours, 2026-11-12):** "Reading sealed bars as
+     look-back to compute indicators for a session after October 30 is
+     allowed. That covers ATR, shelves, dollar volume, and breadth for the
+     drill, the nightly scan, and the flip comparison. Statistics aggregated
+     over sealed sessions stay off-limits, except the 14 real fill records.
+     The drill's 250-session fill-rate figure crossed that line. Keep it
+     disclosed and don't repeat it. It touched no Method 1 or 2 signal, fill,
+     or R, so the out-of-sample test stands. Signal-level flip comparisons
+     can resume." The approved sentence it replaces read: "Those bars may be
+     read only as look-back for post-go-live sessions."
+   - **Disclosure, kept as you ruled.** The 2026-11-11 drill ticket's
+     fill-frequency line ("194 of the last 250 sessions") counted
+     next-session entries for a near-market BAC order on 250 sessions, 242
+     of them inside the sealed window: a statistic aggregated over sealed
+     sessions. The count ran `technicals.compute_levels` (which also computes
+     Method 1 setup fields) on its signal days and used only ATR14; no
+     Method 1 or Method 2 signal, fill or R was evaluated. It is not
+     repeated: no later ticket or report carries a statistic aggregated over
+     sealed sessions (the 14 real fill records excepted). The same ticket's
+     ATR14 (1.2133: 14 true ranges from 10-23 to 11-11, reading 7 sealed
+     bars, 10-22..10-30), which set T, C, S, P and N, its name ranking by
+     30-session average dollar volume (09-30..11-10: 23 sealed sessions), and
+     the night-1 flip comparison's threshold tests for 2026-11-11 (the
+     50-session average of closes 09-02..11-11, 42 sealed; ATR14 at t-1, 14
+     true ranges 10-22..11-10 reading 8 sealed bars, 10-21..10-30; the
+     30-session average volume, 09-30..11-10, 23 sealed) read sealed bars as
+     look-back for a session after 10-30, which the ruling allows. The 8-check
+     record carries the disclosure in rows seq 3, 8, 10 and 11. One more
+     statistic crossed the same line, found after your ruling: the 3.4
+     T-rounding proposal (ruled 2026-11-12) first gave its sub-cent share as 24.1% (41,033 of
+     170,569 final candles in night 1's sample), which counted highs back to
+     about 2026-07, mostly sealed sessions. It is a count of price precision
+     only (no signal, fill or R), but it is a statistic aggregated over sealed
+     sessions, so it is replaced by the same count over the eight post-seal
+     sessions (23.7%) and is not repeated.
+   - **Standing rule on statistics (yours, 2026-11-12):** "New standing rule:
+     before you compute any statistic, state its session range. If it uses
+     2025-01-02 to 2026-10-30 for anything beyond look-back, stop and ask me
+     first." So every statistic (in a report, a ticket, a message or a check)
+     has its session range stated before it is computed, and one that would
+     use the sealed sessions for anything beyond look-back is not computed
+     until you have been asked and have answered.
    - In `fills.py` the seal is the default of `step`, `run` and the two
      marking functions: a session in that window raises an error unless the
-     caller names an unseal. There are two
-     names, and a contract test lists every file that uses either:
+     caller names an unseal. The window is also fixed in the code, so a params
+     set carrying another window cannot open it. The unseals are private
+     objects compared by identity, so no string, typed or computed or read
+     from a file or the environment, can stand in for one. There are two
+     names. A contract test pins every place a scanned repo file writes
+     either name, file by file, and fails a lookup of the fills module by a
+     computed name in the plain forms (`getattr`, `vars`, `__dict__`); it
+     cannot see code outside the repo, or every dynamic route inside it, so
+     for `UNSEALED_BY_PICK` the backtest runner's check of the committed pick
+     is the real guard. *(This description of the seal is brought up to date
+     2026-11-12 with commit A (030af69) and commit B; no rule changes.)* The
+     two names:
      - `UNSEALED_BY_PICK`, passed only by the backtest runner after it has
        verified the committed pick;
      - `KNOWN_ANSWER_REPLAY`, the one exemption. The known-answer contract
@@ -457,7 +594,8 @@ A rule that can't be computed counts as failed.
   universe and exits.
   - **One run:** for every trade of the pick, take its signal date t and draw a
     random eligible(t) ticker that did not signal for that variant on t.
-  - **Same order construction:** trigger 1 cent above that ticker's high(t);
+  - **Same order construction:** trigger 1 cent above that ticker's high(t),
+    rounded up to the cent (3.4, ruled 2026-11-12);
     ceiling +0.25 ATR; a stop the same number of ATRs below the trigger as the
     real trade's; a 3R target; the same entry window, breadth gate, exits and
     costs. A random order has no shelf or gap low, so it is canceled only by
@@ -551,12 +689,296 @@ Report-only: the OOS with its top 3 trades removed, a 90% bootstrap interval
 
 ## 4. Part 2: nightly forward test
 
-**Schedule.** A launchd agent runs on weekdays at 17:30 ET, wrapped in
-caffeinate.
-- Retry slots at 19:30, 21:00 and 06:30. Each is a no-op once the session is
-  complete.
-- **Completed-session guard:** only sessions whose bar is final are processed;
-  later candles are dropped.
+**Schedule.** Your instruction (2026-11-11): "I place orders in the evening,
+so design for that. Run the scan on provisional bars in the evening, recheck
+against the final bars overnight, and alert me before the open if any ticket
+changed or disappeared. Before relying on it, measure how often provisional
+bars flip a signal across the nights you sample. Also alert me if a nightly
+run misses its window."
+
+*How it is carried out (steps 1 and 2, and the flip report in step 4) was
+ruled 2026-11-12 ("yes on items 1 to 8 as recommended"); you accepted step
+3's Mac precondition on 2026-11-12. It replaces the approved schedule: a
+weekday run at 17:30 ET with retry slots at 19:30, 21:00 and 06:30, whose
+17:30, 19:30 and 21:00 times were provisional until the bar-finality
+measurement. The forward log comes from the overnight recheck on final bars.
+The flip report (step 4) goes to you before go-live (target Mon 11-23), and
+your acceptance bar judges M1 and M2 separately. If you accept it, you place
+the evening tickets of each method that meets the bar from go-live, with the
+overnight recheck and the pre-open alert as the safety net. A method with any
+flip, and every method until you accept the report, gets its tickets from the
+overnight recheck alone, placed before the open (by 09:25).*
+
+1. **One night job per session** (a launchd agent, idempotent per session).
+   It is started and kept awake the way the sampler is (step 4): weekdays at
+   17:20 ET and at login, with an idle-sleep assertion from 17:20 until the
+   night's last recheck retry at 07:30. As in the sampler, it builds a client
+   for each run, so a re-authentication is never reverted, and a job still
+   running when the next session's job is due carries on into that session.
+   - **a. Evening scan, 17:30 ET** (retries at 18:15 and 19:00 inside the
+     job), on provisional bars:
+     - the day's bar is the provisional candle with one substitution: its
+       close is the quote's regular-session last price, the official close;
+       its open, high, low and volume stay provisional;
+     - completeness gate: SPY and at least 99% of the prior session's eligible
+       names; truncated responses are retried;
+     - it writes PROVISIONAL tickets. For a method that has evening tickets
+       (you accepted the flip report and the method met your bar, step 4), it
+       notifies you, so you can place them that evening; for a method on
+       recheck tickets it writes them without sending them, so the recheck
+       can compare them. It never writes the forward log.
+   - **b.** The job then waits for the recheck, watching the wall clock (a
+     long sleep does not count down while the Mac sleeps).
+   - **c. Overnight recheck, the run of record, from 01:00 ET**, retried every
+     30 minutes until 07:30:
+     - it needs final candles for SPY, for every name with an evening ticket,
+       a pending order or an open paper order, and for at least 99% of the
+       other names; a truncated response is retried, never read as a missing
+       bar;
+     - it recomputes the session from scratch on final bars (signals, order
+       states, tickets) and writes the forward log;
+     - it compares each evening instruction with its own, by ticker (entry
+       tickets, CANCEL, REPLACE and TIME-EXIT lines alike):
+       - **confirmed:** the same instruction, T, C, S, P and N;
+       - **changed:** any of those differ. Instruction: cancel the whole group,
+         confirm it is gone, place the replacement;
+       - **disappeared:** no instruction on final bars for a name whose final
+         bar exists. For an entry ticket the instruction is: cancel the whole
+         group. For an evening CANCEL or REPLACE you may already have carried
+         out, the morning message prints instead what the run of record
+         expects: re-place the group it keeps, at its levels, or log a
+         "provisional-bar flip" deviation (ruled 2026-11-12);
+       - **unconfirmed:** the name's final bar is still missing at the last
+         retry. Never reported as disappeared. The default (ruled
+         2026-11-12): leave the order as placed and act only on a later
+         CHANGED or DISAPPEARED;
+       - **appeared:** an instruction that exists only on final bars. An entry
+         ticket is printed as a LATE TICKET you may place before the open, and
+         leaving it is not a deviation. A CANCEL, REPLACE or TIME-EXIT line is
+         due before 09:25 ET like any other, and missing it is a process
+         deviation (section 5). *(Ruled 2026-11-12. B5 tests each class with
+         each kind of instruction.)*
+   - **d. Morning message, sent when the recheck finishes and by 08:30 ET:**
+     "recheck: all N confirmed", or, with an alarm sound, "RECHECK: k changed,
+     m disappeared, u unconfirmed, l late. Act before 09:25 ET", with the steps
+     in the ticket file. The alarm sounds no earlier than 07:00 ET (ruled
+     2026-11-12). For a method on recheck tickets (step 4), the message also
+     carries the recheck's tickets, to place before 09:25. It states when the
+     recheck finished and any time the Mac slept. Silence never means all
+     clear: the watchdog covers a missing message.
+   - **e. A recheck that finishes after 09:25** *(ruled 2026-11-12)*: you act on its
+     alert as soon as you see it. A changed or disappeared entry group that
+     has not filled is canceled, and a changed group's replacement is placed
+     only while its entry window is open (an entry placed after 09:30 is
+     logged as a process deviation). A group that has filled keeps its
+     bracket and is logged as the deviation "provisional-bar flip" in the
+     8-check record; its ledger row stays and is left out of the
+     simulator-vs-paperMoney fill difference. A CANCEL, REPLACE or TIME-EXIT
+     line that appeared, and an evening CANCEL or REPLACE already carried out
+     that changed or disappeared, are handled as in rule c; a fill or exit
+     that came before you could act is logged as a "provisional-bar flip",
+     not as a missed cancel.
+   - **f. An INCOMPLETE or failed recheck** *(ruled 2026-11-12)* keeps retrying hourly through the
+     day until the session's final bars are complete. The next evening scan
+     first completes any missing run of record, in session order, before it
+     issues tickets.
+   - The live-account alarm runs in both parts. The token check is one rule
+     for every run ("Each run", step 1).
+2. **Watchdog** (a separate launchd agent, run at 19:30 and 08:00 ET, at
+   login, and every `params.watchdog_every_min` minutes, 60): it reads the
+   night job's status file against the NYSE calendar and alerts once per
+   missed window: at 19:30 ET, "the evening scan missed its window: no
+   tickets for <date>"; at 08:00 ET, "the recheck missed its window: last
+   night's tickets are UNCONFIRMED". It watches the night job of step 1
+   only; a night the sampler misses is flagged by the sampler's next pass
+   (MISSED-NIGHT, step 4). A Mac that is off at 17:20 runs neither agent
+   until it is started. A login then starts both, as it starts the sampler
+   (step 4). The watchdog reports any window already missed. A recheck
+   missed while the Mac was off is completed late, at the latest by the next
+   evening scan (rule f), and rule e applies to any ticket already placed.
+3. **What the Mac has to do** *(accepted by you, 2026-11-12: "I'll keep it
+   plugged in with the lid open on ticket nights.")*:
+   - caffeinate (an idle-sleep assertion) stops idle sleep only while the Mac
+     is fully awake. It does not stop lid-close, Apple-menu or low-battery
+     sleep, has no effect in the brief maintenance wakes, and never wakes the
+     Mac. Measured 2026-11-10/11: 93 maintenance wakes while the Mac slept
+     (median 46 seconds; 17 lasted from 81 seconds to 68 minutes), and the
+     08:30 token monitor started at 08:42 inside a 401-second one.
+   - So on ticket nights the Mac stays on AC power with the lid open; once you
+     have woken it in the evening, the night job keeps it from idle sleep until
+     morning. A weekday wake schedule (`pmset`, a system setting you would run)
+     is an optional backup.
+   - The sampled nights before go-live need the same (a request, not a rule):
+     with the lid closed, a night loses its overnight pulls, including the
+     00:30 and 01:00 pulls that test the 01:00 recheck start. The Mac also has
+     to run on New York time: the launch is at 17:20 local time.
+   - Alerts are macOS notifications on this Mac only. An off-machine alert is
+     not built. Your ruling of 2026-11-12: "Off-machine alert: not now. Put it
+     on the January go/no-go list." (section 6).
+4. **Flip measurement, before the evening tickets are relied on** (your
+   instruction):
+   - **Night 1 (2026-11-11), bar level, 1,926 names** (evening sample 17:55 ET;
+     final pulls 22:00, 01:30 and 06:30; `compare_bars.py --all --bars-only`,
+     run while night 1 was the only night). Night 1 was taken by the earlier
+     sampler: it has no SPY and no 1-minute bars.
+     - highs, lows and the official close identical on every name, and the
+       whole-cent trigger T (from the high alone) moved on none;
+     - the open differed on 11 names (0.57%; 4 up, 7 down; median 0.33% of
+       price, at most 2.65%). The provisional open equals the quote's open on
+       all 1,926; whether it is the first trade or another print is not yet
+       verified (night 1 has no 1-minute bars to check it against). The
+       Method 2 gap test reads the open, so it is the test most exposed. In
+       the quote-field Method 2-like stratum (31 names; defined below) no open
+       differed;
+     - the candle's own close differed on 4 names, which is why the scan uses
+       the quote's official close (0 differed);
+     - volume differed on 98.9% (median +0.02%, from -1.8% to +16.7%);
+     - between the 17:55 evening pull and the 22:00 pull, the provisional
+       open, high, low and close were identical on all 1,926 names. Volume rose
+       on 749 of them (it never fell; median +0.07% among those, at most
+       +7.4%). From 22:00 to 01:30 the provisional candle did not change at
+       all. So on night 1, retries at 18:15 and 19:00 would have seen the same
+       prices as the 17:55 sample. Volume only rose during the evening on
+       night 1, so between the 17:30 sample and its retries Method 2's volume
+       test could only move from fail to pass; against the final bar it can
+       move either way (the final volume was lower on PBF and XRAY);
+     - finality: at 22:00 no name was final; at 01:30, 99.0% (the other 19
+       responses were truncated: one candle, no history, at 01:49:51-01:50:33;
+       at 06:30 all 19 were final with full history); at 06:30, 100%. The final
+       bars at 06:30 were identical to those at 01:30 on all 1,907 names final
+       in both. Three names returned no history in any pull and are not
+       compared.
+     - The first count, 1,897 names, used only the 22:00 and 01:30 pulls
+       (taken at 04:05, before the 06:30 pull began): it left out the 19
+       truncated names and 10 names with fewer than 50 prior sessions. That
+       night's threshold tests (none flipped) read sealed bars as look-back;
+       see 3.7.
+   - **Night 2 (session 2026-11-12)** is being taken by the earlier sampler
+     too, started by hand in a session: old universe rules, no SPY, no
+     1-minute bars, and three candles kept per evening row (90 per final
+     row). Its universe-wide pulls are queued at 17:40 (the evening) and at
+     00:30, 01:00, 04:30 and 06:30; the 04:30 and 06:30 pulls run only if the
+     17:40 run ends without an error. A second script samples 12 names at
+     17:40, at 20:30 and every 15 minutes from 23:30 to 04:30.
+   - **Nights from 11-13:** you ruled yes on commit B and on installing the
+     sampler's launchd job on 2026-11-12. Its launchd template,
+     `deploy/launchd/com.stockmonitor.phase2barsample.night.plist`, is
+     installed by your steps: replace `{{PROJECT_ROOT}}` with the project
+     path, copy the file to `~/Library/LaunchAgents`, then run `launchctl
+     load` on it. Until it is loaded, each night is sampled only by the
+     earlier sampler started by hand in a session, at night-2 quality, or not
+     at all. As of the afternoon of 11-12, nothing is started for 11-13.
+   - **The sampler** (`loops/phase2/sample_bars.py`, run through
+     `loops/phase2_sample.py`), as built in commit B; its schedule was ruled
+     2026-11-12 with it. Each night it stores the evening quotes and
+     provisional candles for a stand-in of the 3.1 universe plus SPY, the
+     final candles overnight, and regular-session 1-minute bars for SPY, every
+     name whose final open differs from its evening open, and every Method
+     2-like name on quote fields. How it runs:
+     - one launchd label runs its night mode on weekdays at 17:20 ET. Its
+       template sets RunAtLoad, so once the template is loaded, a login also
+       starts it. A process makes one pass per session it samples;
+     - it holds an idle-sleep assertion from 17:20, ten minutes before the
+       evening sample, until the night's last pull, so a daytime start does not
+       keep the Mac awake. The assertion does not stop lid-close sleep, so
+       sampled nights need the Mac on AC power with the lid open (step 3);
+     - the evening sample runs at 17:30 ET, with retries at 18:15 and 19:00 if
+       it FAILED or was INCOMPLETE. An evening is complete with SPY and at
+       least 99% of the candidates (`params.completeness_min`); an incomplete
+       one may be re-run for its missing names. An evening sample started
+       after 19:30 (`params.watchdog_evening_et`) is LATE and stays out of the
+       pooled numbers. An evening still INCOMPLETE whose retries were lost to
+       sleep is notified once ("INCOMPLETE, and its retries were not made");
+     - overnight pulls run at 00:30, 01:00, 01:30, 04:30, 06:30 and 07:30.
+       Each takes only the names without a final bar yet, except the 06:30
+       pull, which re-pulls every name so a final bar can be compared with a
+       later one;
+     - the token is checked before every pull (at least 3 hours left,
+       `params.token_min_hours`). Once per pass, after the evening sample, the
+       sampler warns you if the token will not still have those 3 hours left
+       at the night's last pull;
+     - a client is built for every pull, never one per night, so a
+       re-authentication between pulls is picked up and never reverted. Do not
+       re-authenticate while a pull runs (a pull takes about 20 minutes);
+     - each pass first records MISSED-NIGHT, with one notification, for any of
+       the last 10 sessions since the sampler's first night that has no usable
+       evening sample;
+     - it makes one catch-up final pull for each recent session whose evening
+       sample has no completed final pull. A night whose INCOMPLETE pulls all
+       started before its last pull time counts as not completed (a night cut
+       short by a power loss, a crash or a token failure). A start before 17:20 makes these pulls while it waits for the evening; a start at or after 17:20 (the 17:20 launch itself, a later start or a roll-over) samples the evening first and makes them after it;
+     - a pass whose session already has an evening sample and a final pull, DONE or INCOMPLETE, made at or after its last pull time does nothing. So after a complete
+       night, a start on a weekend or a holiday, the 17:20 launch on a weekday
+       holiday included, pulls nothing and holds no assertion;
+     - if the process is still running at the next session's 17:20 (a Mac
+       asleep through the night), it rolls over: it carries on into that
+       session instead of losing it. If the Mac wakes on the next session's day after its 17:20, the pass stops its remaining overnight pulls (a wake two or more sessions later still makes them first); the next pass
+       samples the new evening first, then catches up the earlier night. A
+       process that has made 7 passes exits, with a notification naming the
+       session it will not sample;
+     - a Mac that is off at 17:20 samples that night on time only if it is
+       started by 19:30: the login then starts the sampler's job, which
+       samples the evening before any catch-up pull. Started after 19:30, its
+       evening is LATE. If the Mac stays off, nothing is sampled and the next
+       pass flags the missed night;
+     - its calendar is a stand-in that ends 2027-03-31; a run keyed past it
+       fails with a notification.
+   - **The flip report and what it decides (ruled 2026-11-12).**
+     - **Nights:** every night sampled through Fri 2026-11-20, up to eight
+       nights, the 11-20 monthly expiration included. The report goes to you
+       before go-live (target Mon 11-23).
+     - **Contents, instead of a count of nights:** per-field difference rates
+       per name-night; the open's difference in ATRs; each signal's margin to
+       each threshold; exact binomial bounds on every flip count ("0 of 10 M2
+       signals, 95% upper bound 26%"); and two Method 2-like strata. The bars
+       stratum is |gap| >= 2% of the prior close and volume >= 2 x ADV30, on
+       final bars; about 200 name-nights of it are wanted. The quote-field
+       stratum is |open / prior close - 1| >= 2% and volume >= 2 x the 10-day
+       average (`sample_bars.M2_LIKE_GAP`, `M2_LIKE_VOLUME`).
+     - **Signal level (your 3.7 ruling of 2026-11-12):** the ATR, margin,
+       signal-flip and bars-stratum parts read sealed-window bars as
+       look-back for nights after 10-30, which the ruling allows, so every
+       sampled night, nights 1 and 2 included, is compared at the signal
+       level as well as field by field. The report carries no statistic
+       aggregated over sealed sessions.
+     - **What it decides.** Your acceptance bar, in your words (2026-11-12):
+       "Flip report acceptance bar, fixed now before the report lands: a
+       method gets evening tickets only if it had zero flips on every sampled
+       night, in either direction (a ticket changed, disappeared, or appeared
+       only on final bars). Judge M1 and M2 separately. Any flip keeps that
+       method on recheck tickets." So M1 and M2 are judged separately:
+       - a method with zero flips on every sampled night, in either
+         direction, meets the bar. If you accept the report, you place that
+         method's evening tickets from go-live, with the overnight recheck and
+         the pre-open alert as the safety net;
+       - a method with any flip (a ticket that changed, disappeared, or
+         appeared only on final bars, on any sampled night) stays on recheck
+         tickets, as does every method until you accept the report: its
+         tickets come from the overnight recheck alone and are placed before
+         the open (by 09:25). The evening scan still runs and writes its
+         tickets without sending them, so the recheck can compare them;
+       - `compare_bars.py` prints, per method, "acceptance bar (ruled
+         2026-11-12): met / not met" over every sampled night, LATE nights
+         included (a MISSED-NIGHT has no evening sample to compare). It counts a ticket under breadth on, at any k, (my strict reading, every stop width, not only the paper default k = 1.5; say if you want it narrowed)
+         that changed, disappeared or appeared; a night without the ticket
+         comparison cannot show zero flips and leaves the bar not met.
+     - **Also ruled 2026-11-12:** LATE nights stay out of the pooled numbers
+       (`--include-late` adds them only on request); the 1-minute bars are
+       kept; go-live is recorded as a reviewed edit of
+       `compare_bars.GO_LIVE_ACTUAL`, never a command-line flag.
+     - **Later special sessions** (the 11-27 half day, the 12-18 quarterly
+       expiration, the 12-24 half day) are added to the report as they come,
+       and any flip on one is sent to you at once.
+     - **The replay:** once `signals.py` exists (B4), every stored night is
+       replayed through it both ways, with the same bounds per method (its
+       look-back is allowed by the 3.7 ruling).
+
+- **Completed-session guard:** the run of record processes only sessions whose
+  bar is final; later candles are dropped. The evening scan uses the
+  provisional bar as described above and is marked as such. *(The evening
+  scan on provisional bars is your instruction; "the run of record" was
+  ruled 2026-11-12, with the section 4 schedule. The approved guard
+  applied to every run.)*
   - **B1 result** (samples on 2026-11-10 at 16:58, 17:35, 18:35 and 20:20 ET
     and on 2026-11-11 at 01:10 ET; AAPL, NVDA, F, AMC, PBT, SPY):
     - Through 20:20 ET the session's candle was still provisional. It was
@@ -574,22 +996,27 @@ caffeinate.
     guard tests the stamp, not the clock. A date whose only candle is stamped
     midnight New York is not final; where both exist, the final one is used.
     With that test the close needs no cross-check against the quote.
-  - **Still open:** the time of day the final candle appears (after 20:20 ET,
-    before 01:10 ET). It is being sampled on the evening of 2026-11-11, and
-    the run time is set from it before the freeze. Until then the 17:30 start
-    and the 19:30 and 21:00 retry slots are provisional: under this guard a
-    run that starts before the final candle exists reports INCOMPLETE and
-    retries.
+  - **Measured 2026-11-11/12:** at 22:00-22:20 ET every sampled candle for
+    the session was still provisional. The tracked names' final candles
+    appeared between 23:45 and 00:05 ET, and at 01:30-01:50 every complete
+    response of the 1,926 names was final. *Ruled 2026-11-12, with the
+    section 4 schedule: the recheck therefore starts at 01:00 ET with
+    retries.* From night 2 on, the 00:30 and 01:00 pulls (step 4) show on
+    every sampled night whether every name is final by the 01:00 pull.
 - **Completeness gate:** SPY and at least 99% of the prior session's eligible
   names must have a bar for today. Otherwise the run is INCOMPLETE: notify,
   retry, and never log "no session" on a calendar session.
-- Optionally, you can set a Mac wake schedule (`pmset`). That is a system
-  setting, so you would run it; I can't.
 
-**Each run:**
-1. **Token check:** fail closed unless the token has at least 3 hours of life
-   left. Every notification states the token's expiry and escalates to
-   "re-auth tonight" when needed.
+**Each run** (the evening scan and the recheck alike, except where a step says
+otherwise; *the two runs and the steps marked "the recheck only" were ruled
+2026-11-12, with the section 4 schedule*):
+1. **Token check:** fail closed unless the token outlives max(now +
+   `params.token_min_hours`, the last recheck retry of its night at
+   `params.recheck_last_et`). At 17:30 that is about 14 hours. *(Ruled
+   2026-11-12, with the section 4 schedule. The approved rule, at least 3
+   hours of life left, stays as the floor. The sampler's own check is in
+   step 4 of the schedule.)* Every notification states the token's expiry and
+   escalates to "re-auth tonight" when needed.
 2. **Refresh bars** from each symbol's last cached date, with a 15-session
    overlap.
    - **Basis-change detection:** across the overlap, a uniform ratio other than
@@ -604,11 +1031,18 @@ caffeinate.
      print, labeled DELISTED, and kept in the statistics.
    - The directory files are archived nightly (the forward universe is truly
      point-in-time).
+   - *Ruled 2026-11-12, with the section 4 schedule:* the forward-trade
+     actions in this step (rescaling open forward and paper trades,
+     CORP-ACTION, the DELISTED close and the 2-session missing-bar count)
+     belong to the recheck only. The evening scan detects a basis change,
+     warns, and prints any cancel-and-replace ticket as PROVISIONAL.
 3. **Pull the session's 8-K Item 2.02 filings** with header acceptance times
    (EDGAR, approved D5).
 4. **Signals for all 12 variants,** with breadth-blocked and unsizable signals
    logged too.
-5. **Forward tracker:** advance every forward trade with `fills.py`.
+5. **Forward tracker** (the recheck only: the run of record; *ruled
+   2026-11-12, with the section 4 schedule*): advance every forward trade with
+   `fills.py`.
    - Idempotent, keyed by session: each run rebuilds every tracked order from
      its signal day on the stored bars. `fills.py` consumes a session once and
      refuses a replay, so a bar that arrives late, or a corrected breadth
@@ -619,10 +1053,14 @@ caffeinate.
    - Report-only: regular-hours bid/ask snapshots for signaled, pending and
      open names, to check the spread model. These need the Mac awake during
      market hours.
-6. **Paper book update and tickets** (below).
-7. **Self-parity:** re-derive the night's outputs from the decision snapshot
-   with `--as-of` and diff them against what the run produced. Any difference
-   sends an alert.
+6. **Paper book update and tickets** (below). The evening scan writes
+   PROVISIONAL tickets; the recheck rebuilds them on final bars and compares
+   (schedule, step 1c). Paper slots are allocated by the run whose tickets you
+   place. *(Ruled 2026-11-12, with the section 4 schedule.)*
+7. **Self-parity** (the recheck only; *ruled 2026-11-12, with the section 4
+   schedule*): re-derive the night's outputs from the decision snapshot with
+   `--as-of` and diff them against what the run produced. Any difference sends
+   an alert.
 8. **Notify:** "Phase 2: N new tickets, M cancels, X exits, Y confirmations
    needed; token expires ...".
 
@@ -658,14 +1096,16 @@ caffeinate.
   and printed exactly as entered:
 
       BUY +N SYM STP <T> LMT <C> GTC  (trigger: STD)
-         1st trgs OCO:  SELL -N SYM LMT <P> GTC  /  SELL -N SYM STP <S> GTC
+         1st trgs OCO:  SELL -N SYM LMT <P> GTC  /  SELL -N SYM STP <S> GTC  (trigger: STD)
 
-  It shows the sizing math, deployment and cash after, positions after, and any
-  2nd-in-sector flag.
+  (The sell stop's STD was ruled 2026-11-12: section 5, item 5.) It shows the
+  sizing math, in the format of `orders.sizing_lines` (ruled 2026-11-12),
+  deployment and cash after, positions after, and any 2nd-in-sector flag.
 - **CANCEL, TIME-EXIT and REPLACE instructions** carry a hard deadline
   ("before 09:25 ET Fri 12-04") and the exact sequence: cancel the whole group,
   confirm it is gone, then act. Never edit an order in place.
-- **Live-account alarm:** every night, read-only, the live account must have no
+- **Live-account alarm:** in both runs (*ruled 2026-11-12, with the section
+  4 schedule; approved: every night*), read-only, the live account must have no
   working orders and no positions; anything there triggers an urgent
   notification. If the API can see paperMoney, the account is selected by its
   D- number, never by list position.
@@ -704,8 +1144,10 @@ caffeinate.
 **Logs** (`logs/phase2/`):
 - append-only;
 - recomputes go to separate versioned files;
-- a nightly SHA-256 manifest of signals, trades and ledger is kept outside
-  `logs/` and backed up, and committed at milestones (diff first).
+- a nightly SHA-256 manifest of signals, trades, the paper ledger and the
+  8-check record (`placements.jsonl`) is kept outside `logs/` and backed up,
+  and committed at milestones (diff first). *(The 8-check record as its own
+  file was ruled 2026-11-12, section 5, "Two records".)*
 
 ---------------------------------------------------------------------------
 
@@ -726,6 +1168,74 @@ then screenshot all three in "More fields" mode before canceling. This records
 the exact icons and status strings the check reads. Seq and All are the two
 known wrong structures (AR 9/17 was the Seq error).
 
+**Drill placements (your instructions, 2026-11-11 and 2026-11-12; the
+construction rules below were ruled 2026-11-12).** Your words: "I want to
+rehearse the order mechanics in paperMoney while the scan gets built.
+Generate one drill ticket tonight from today's close: a liquid name, a buy
+stop-limit entry near the market so it likely fills tomorrow, and a
+1st-triggers-OCO bracket with a sell limit target and a sell stop, all GTC,
+sized on the $1,500 basis. I'll place it tonight and send a screenshot, then
+another after it fills. Run the 8-check on both, including that the bracket
+goes live correctly after the fill. Count it in the 8-check record and keep
+it out of the paper P&L ledger." Your words on 2026-11-12: "Drill: not
+placed. Issue a fresh ticket from tonight's close." So DRILL-2026-11-11-01
+was never sent: it is void (8-check record row seq 9) and does not count.
+DRILL-2026-11-12-01, issued from the 2026-11-12 close, replaces it under the
+same instruction. Neither is a scan signal, and neither claims an edge.
+DRILL-2026-11-12-01 is your explicit exception to "entries come only from the
+Phase 2 nightly scan", as DRILL-2026-11-11-01 was.
+- **How a drill is built (ruled 2026-11-12):** its entry sits near the market
+  so that it fills soon, and above the after-hours ask, since thinkorswim
+  warns on a buy stop at or below the market: trigger T = max(max(close,
+  after-hours last) + max(0.10 x ATR, $0.05), after-hours ask + $0.01),
+  rounded up to the cent, from a quote whose time and bid/ask are printed on
+  the ticket. The rest is as before: C, S and P follow 3.4 (the 0.25-ATR
+  ceiling, a 1.5-ATR stop with no structural stop, a 3R target), and N the
+  $1,500 sizing. The name is chosen by a printed rule, never by a view. The
+  ticket carries no fill-rate figure: under your 3.7 ruling, no ticket
+  carries a statistic aggregated over sealed sessions. This rule replaces the
+  earlier proposal, trigger = max(close, after-hours last, after-hours ask) +
+  max(0.10 x ATR, $0.05). (DRILL-2026-11-11-01's trigger left out the ask, so
+  its T, 50.85, was at times below the after-hours ask, which ranged from
+  50.74 to 50.90.)
+- **DRILL-2026-11-12-01 counts toward Check 3** (your instruction: "Count it
+  in the 8-check record"); DRILL-2026-11-11-01 does not. Counted this way, a
+  first-try pass fills one of the ten placements Check 3 needs, and a fail
+  fails Check 3 until ten later placements exist. Your ruling of 2026-11-12:
+  "DRILL-2026-11-12-01 counts both ways." A drill after DRILL-2026-11-12-01
+  counts only if you say so when you ask for it (ruled 2026-11-12).
+- **DRILL-2026-11-12-01 is kept out of the paper P&L ledger** (your
+  instruction) and is in the 8-check record like any other placement.
+  Ruled 2026-11-12: it is also kept out of the paper book (it takes no
+  slot, risk or deployment) and out of the forward log.
+- *Ruled 2026-11-12:* a drill ticket states its own end: a CANCEL after the
+  last session of its entry window (three sessions, from the NYSE calendar); a
+  CANCEL that evening if it opens above C and has not filled by the close; a
+  close-out by a stated date if the position is still open, so the account is
+  flat before the nightly goes live. For DRILL-2026-11-12-01 the entry window
+  is the three sessions Fri 11-13, Mon 11-16 and Tue 11-17: a CANCEL if it has
+  not filled by the close of Tue 2026-11-17; a CANCEL that evening if it opens
+  above C on one of them and has not filled by the close; and a close-out at
+  the close of Fri 2026-11-20 if the position is still open. Until the nightly
+  goes live (B5), nothing sends these lines automatically: I post them in a
+  conversation with you on the dates printed on the ticket, and on a day with
+  no conversation, you follow the end lines on the ticket yourself. After B5
+  the nightly job sends them.
+- *Ruled 2026-11-12:* items 3 and 7 on a drill are read against this
+  section's wording and marked provisional until the golden probe exists. A
+  provisional item scores as read. If the golden probe later shows the reading
+  was wrong, the placement is re-scored with a correction row and you are
+  told.
+
+**Placed or not placed** *(ruled 2026-11-12)*: nothing is placed, and
+nothing is scored, only if thinkorswim never accepts the order: the ticket is
+never sent, an error comes before any order ID exists, or you stop at the
+confirmation dialog. The unsent ticket gets a void row, and a new ticket gets
+its own id, from the date it is issued. Once any leg has an order ID, it is a
+placement and is scored, a leg shown REJECTED included (items 4 and 7).
+DRILL-2026-11-11-01 was never sent (your word, 2026-11-12), so it has a void
+row (seq 9) and is not scored; DRILL-2026-11-12-01 replaces it.
+
 **Screenshot requirements:**
 - Monitor > Activity and Positions > Working Orders, in "More fields" mode,
   with the group expanded;
@@ -744,18 +1254,50 @@ known wrong structures (AR 9/17 was the Seq error).
    link icon (1st trgs OCO). Not Seq or All.
 4. Both exits SELL TO CLOSE, never SELL SHORT / TO OPEN. With the paper
    account set to Cash, a short-sale leg should show REJECTED.
-5. Target LMT at P and stop STP at S, exactly.
+5. Target LMT at P and stop STP at S, exactly, the stop's trigger STD.
+   *(STD on the stop ruled 2026-11-12: the model stops out on low <= S, so
+   the exit stop needs the same trigger as the entry. The exit line in
+   section 4 and in `orders.ticket_lines` is
+   `SELL -N SYM STP <S> GTC  (trigger: STD)`.)*
 6. All three legs GTC.
 7. Status: parent WORKING or QUEUED, both children WAIT TRG (API:
    AWAITING_PARENT_ORDER, correct only while the BUY parent is unfilled), and
    no leg REJECTED.
-8. No working orders beyond the ledger's expected set.
+8. No working orders beyond the expected set: the orders of every placement
+   whose 8-check record is still open, scan and drill alike, as listed on the
+   ticket. *(Ruled 2026-11-12: the approved "the ledger's expected set" left
+   out drills, which have no ledger row.)*
 
 **Activation check** (after the entry fills; this is the original 8-check):
 - the position quantity is N, the $1,500-basis count;
 - the fill is <= C;
-- both exits are WORKING and linked as an OCO, at the exact levels, -N, GTC;
-- no live entry; no strays.
+- both exits are WORKING and linked as an OCO, at the exact levels, -N, GTC,
+  and both SELL TO CLOSE (the 9/17 AR error went live with a SELL SHORT stop)
+  *(the SELL TO CLOSE clause ruled 2026-11-12)*;
+- no live entry; no working orders or positions outside the expected set
+  *(ruled 2026-11-12; the approved wording was "no strays")*.
+
+On the drill's after-fill screenshot (your instruction, which now applies to
+DRILL-2026-11-12-01: "Run the 8-check on both, including that the bracket goes
+live correctly after the fill") all eight items are read again, item 7 in its
+FILLED wording, together with the activation check. Ruled 2026-11-12: the
+same re-read for every placement. After the fill, items 2 and 3 read the BUY
+parent in Filled Orders (BUY +N, stop T, limit C, filled at or below C) and
+the two exits linked as an OCO. A failed re-read fails the first-try pass,
+like a failed activation check.
+
+**Interim scoring (ruled 2026-11-12):** DRILL-2026-11-12-01 is scored under
+its ticket's own wording, as the 8-check record set out for
+DRILL-2026-11-11-01 (rows seq 4 and 7), so item 8 reads the drill's own group
+as the expected set. On its after-fill screenshot, items 2 and 3 are read
+from Filled Orders, where the ticket asks for the BUY's stop and limit as
+well as its fill price and time, and from the two linked exits. A re-read
+result outside the activation check is recorded and reported to you; under
+the re-read ruled above, a failed re-read fails the first-try pass.
+
+Ruled 2026-11-12: a simulator artifact (a fill the moment the order is
+sent, a fill above C, a fill outside 09:30-16:00) is logged as an incident for
+your judgment, like a partial fill, not as a construction error.
 
 A partial fill by paperMoney is logged as an incident for your judgment; it is
 not scored as a construction error.
@@ -784,10 +1326,28 @@ not scored as a construction error.
   entries placed after 09:30 on their first window session, fills after a
   cancel deadline, and missed cancels.
 
-**Ledger fields** (`paper_ledger.jsonl`): id, order IDs, method, ticker, N,
-T/C/S/P, sector, captures, the eight item results, first-try pass, activation
-result, fixes, deviations, paperMoney fills, exit type, R, and the
-simulator-vs-paperMoney fill difference.
+**Two records** *(ruled 2026-11-12; your instruction kept the drill in the
+8-check record and out of the paper P&L ledger, which the spec had as one
+file)*:
+- **The 8-check record** (`logs/phase2/placements.jsonl`, append-only: a row is
+  never edited, and a correction is a new row naming the one it corrects).
+  Every placement has one, scan, replacement, late and drill tickets alike.
+  The event types are issue, addendum, capture, score, instruction, incident,
+  deviation, note, rule, expected_set, void and disposition: an issue row
+  first, then the others as they happen. A "rule" row quotes one of your
+  rulings; a proposal of mine goes in a "note" row (row seq 5 is a "rule"
+  row that records a proposal, as row seq 7 says). Every row carries a
+  sequence number, the event type, the placement id and its time. Rows 1 and
+  2 of DRILL-2026-11-11-01 predate sequence numbers and are seq 1 and 2 (row
+  3 says so); row 1, the issue row, has no event field and gives its time as
+  "issued". Check 3, the activation results and the process-deviation tally
+  are computed from this file only.
+- **The paper ledger** (`logs/phase2/paper_ledger.jsonl`, the paper P&L): one
+  row per scan placement, keyed by its placement id: method, ticker, N,
+  T/C/S/P, sector, paperMoney fills, exit type, R, and the
+  simulator-vs-paperMoney fill difference. The paper book, paper R and the P&L
+  side of the Friday reconciliation read this file only. A drill has no row;
+  the reconciliation matches drill orders and fills to their 8-check record.
 
 ---------------------------------------------------------------------------
 
@@ -847,14 +1407,21 @@ too narrow. The review's simulation put the false-fail rate of such a band at
 
 **Check 3:** the last 10 placements whose first legible capture arrived by the
 decision close are all first-try passes (section 5). Fewer than 10 placements
-counts as a fail.
+counts as a fail. DRILL-2026-11-12-01 counts here: it replaces
+DRILL-2026-11-11-01, which was never sent and does not count, under the same
+instruction (yours, 2026-11-11 and 2026-11-12). It counts both ways (your
+ruling of 2026-11-12: "DRILL-2026-11-12-01 counts both ways."): a first-try
+pass fills one of the ten placements Check 3 needs, and a fail fails Check 3
+until ten later placements exist (section 5). Later drills count only as
+section 5 says.
 
 **The January report also reminds you to:**
 - **switch the live account from margin to cash before funding it.** It reports
   as a MARGIN account today, where a mis-built short-sale exit opens a short
   instead of being rejected;
 - settle the funded-account procedure: per-order approval or a standing
-  approval of the system, and the sizing basis.
+  approval of the system, and the sizing basis;
+- decide whether an off-machine alert is needed (your 2026-11-12 'not now').
 
 ---------------------------------------------------------------------------
 
@@ -911,9 +1478,14 @@ Every code milestone is shown as a diff before commit.
     candle for the same date (stamped midnight New York, with an unofficial
     close) can sit beside it (section 4).
 
+  - when the final bar appears: for the six tracked names, between 23:45 and
+    00:05 ET; by 01:50 every complete response of the 1,926 names was final
+    (2026-11-11/12, section 4). Some responses come back truncated (one
+    candle, no history); the commit B sampler and the `bars.py` retry
+    (ruled 2026-11-12) retry them.
+
   Still open in B1:
-  - **when the final bar appears** (after 20:20 ET, before 01:10 ET): sampled
-    on the evening of 2026-11-11. It sets the nightly run time;
+  - more nights of finality and flip sampling (section 4);
   - your golden paperMoney probe (section 5).
 - **B1b.** `fills.py` and its unit tests (diff first), then the known-answer
   calibration on the 14 real stop-outs.
@@ -980,15 +1552,40 @@ Every code milestone is shown as a diff before commit.
     agent, an attack on the seal exemption, was stopped unfinished when the
     usage limit was reached; the exemption check was tightened from the other
     agents' findings.
-- **B2. Freeze:** spec + params (with the bar-finality cutoff) + code hash,
-  committed before any IS number exists.
+  - **Seal hardening (030af69, committed 2026-11-12 with your word).** A
+    later attack on the seal found that a string, a look-alike object or a
+    moved or inverted params window could get past it. The commit makes the
+    seals private identity objects and fixes the spec's window in `fills.py`;
+    its contract test pins every place a scanned repo file writes an unseal
+    name and fails a lookup of the fills module by a computed name in the
+    plain forms. Commit B widens that scan to notebooks, makefiles and larger
+    files (3.7). 276 tests.
+- **B2. Freeze:** spec + params (with the night schedule) + code hash,
+  committed before any IS number exists. The night schedule's times are
+  operational and enter no backtest number. *(The night schedule, and the
+  freeze including it, were ruled 2026-11-12, with the section 4 schedule; the
+  approved text froze the bar-finality cutoff here. `params.PENDING_RULING` is
+  now empty, so no field awaits a ruling. T's rounding (3.4) and the universe
+  rules (3.1), which are not params fields and change backtest numbers, were
+  ruled 2026-11-12 too.)*
 - **B3. Pulls:** the directory, security types, bars from 2021-01-04, the
   yfinance split table, EDGAR 8-K Item 2.02 headers and SIC codes. About 4-5
   hours of machine time, most of it the paced EDGAR header pull.
 - **B4.** universe / events / signals, the sector map and its validation, tests
-  and contracts, and the feasibility estimate (section 6).
+  and contracts, and the feasibility estimate (section 6). The universe
+  carries your 2026-11-12 rulings (3.1): BDCs in, known by their SEC 814-
+  file number; MLPs out by the K-1 criterion, not by name; SPACs also by SIC
+  6770. *Ruled 2026-11-12:* then the flip replay: every stored night through `signals.py`
+  both ways (section 4, step 4; its look-back reads sealed bars, which the
+  3.7 ruling allows).
 - **B5.** The nightly goes live (target the week of Nov 23): forward logging and
-  default-config paper tickets.
+  default-config paper tickets. *Ruled 2026-11-12, with the section 4
+  schedule:* the forward log comes from the overnight recheck. If you accept
+  the flip report before go-live, the evening tickets start at go-live for
+  each method that meets your acceptance bar; every other method, and every
+  method until you accept the report, gets recheck tickets placed before the
+  open (section 4, step 4). Go-live is recorded as a reviewed edit of
+  `compare_bars.GO_LIVE_ACTUAL`.
 - **B6a.** IS run and pick commit (early December). I ask then whether paper
   tickets switch to the picks (approved in principle, D9).
 - **B6b.** Sealed OOS after the 2026-12-30 close, and the Part 1 report.
@@ -996,21 +1593,22 @@ Every code milestone is shown as a diff before commit.
 
 ---------------------------------------------------------------------------
 
-## 9. Approved decisions (2026-11-10)
+## 9. Decisions (approved 2026-11-10, ruled 2026-11-11 and 2026-11-12)
 
 | | Decision | As approved |
 |---|---|---|
 | D1 | Phase 2 rule block | Yes, with your fix: position cap **17.5% ($262.50)**, so four full positions fit the 70% cap. The 3-share minimum then limits paper to ceiling prices <= $87.50 and risk <= $5.00 a share |
 | D2 | Stop rule | S = min(structural stop, T - k x ATR) |
 | D3 | Exits | 3R static target; time exit at the session-41 open; no trailing; M1 keeps rr >= 3 on its structural stop |
-| D4 | M1 mechanics | Touch rule; trigger 1 cent over the signal-day high; ceiling +0.25 ATR; 3-session window |
+| D4 | M1 mechanics | Touch rule; trigger 1 cent over the signal-day high, rounded up to the cent (**ruled 2026-11-12**, 3.4); ceiling +0.25 ATR; 3-session window |
 | D5 | M2 earnings dates | SEC 8-K Item 2.02 with filing-header times; price/volume fallback for foreign issuers. The contact you supplied lives in `.env` only and is never committed |
-| D6 | Universe and splits | Security types plus directory rules; MLPs, royalty trusts and SPACs excluded; split table via yfinance; survivorship flagged |
+| D6 | Universe and splits | Security types plus directory rules; MLPs, royalty trusts and SPACs excluded; split table via yfinance; survivorship flagged. **Ruled 2026-11-12, for B3/B4 (3.1):** BDCs are in, known by their SEC 814- file number, not by name; MLPs are excluded by the approved K-1 criterion, not by name (so PAGP and HESM, 1099 issuers, are in); SPACs are also identified by SIC 6770. The stand-in sampler keeps its name rules |
 | D7 | Fills and costs | The model in 3.4, calibrated on the 14 real stop-outs before the freeze. **Ruled 2026-11-11: every stop exit pays 4 half-spreads; no separate slippage; a gap past the target needs P + 0.01; the costs x 2 row doubles every cost** |
-| D8 | Protocol | Fill-date windows; OOS sealed in code; pick eligibility; sealed OOS after 12-30; bug rules. **Ruled 2026-11-11: one seal exemption, for exact replays of the 14 known-answer records and the bars they need** |
-| D9 | Paper process | The ledger is the record; 2 slots per method; **SIC codes mapped to the 11 GICS sectors**; paper switches to the IS picks in December (asked again then) |
+| D8 | Protocol | Fill-date windows; OOS sealed in code; pick eligibility; sealed OOS after 12-30; bug rules. **Ruled 2026-11-11: one seal exemption, for exact replays of the 14 known-answer records and the bars they need. Ruled 2026-11-12: sealed bars may be read as look-back to compute indicators (ATR, shelves, dollar volume, breadth) for any session after 2026-10-30; statistics aggregated over sealed sessions stay off-limits, except the 14 real fill records; the drill's fill-rate figure stays disclosed and is not repeated** |
+| D9 | Paper process | The ledger is the record, split into two records, the 8-check record and the paper ledger (**ruled 2026-11-12**, section 5); 2 slots per method; **SIC codes mapped to the 11 GICS sectors**; paper switches to the IS picks in December (asked again then) |
 | D10 | Part 4 | Analog-window band plus the count rule; Check 3 = placement + activation; funding per method; **M2 extends to 2027-03-12 if short of the count, which is never lowered** |
-| D11 | Operations | Nightly run plus retries; token fail-closed; live-account alarm; token-monitor warning at 5.0 days (**applied 2026-11-10**) |
+| D11 | Operations | Nightly run plus retries; token fail-closed; live-account alarm; token-monitor warning at 5.0 days (**applied 2026-11-10**). **Instructed by you, 2026-11-11:** an evening scan on provisional bars; an overnight recheck on final bars; an alert before the open if any ticket changed or disappeared; an alert if a nightly run misses its window; measure how often provisional bars flip a signal before relying on the evening scan. **Accepted by you, 2026-11-12:** the Mac precondition (section 4, step 3): "I'll keep it plugged in with the lid open on ticket nights." **Ruled 2026-11-12** ("yes on items 1 to 8 as recommended"): the night job and the watchdog (section 4, steps 1 and 2: the two runs with the recheck as the run of record, the ticket states with the CANCEL / REPLACE splits, the UNCONFIRMED default, rules e and f, the morning message with an alarm no earlier than 07:00, the token horizon), the `bars.py` truncated retry, the freeze including the night schedule, the sampler and installing its launchd job, and the flip report with what accepting it decides. **Your acceptance bar, 2026-11-12:** "a method gets evening tickets only if it had zero flips on every sampled night, in either direction (a ticket changed, disappeared, or appeared only on final bars). Judge M1 and M2 separately. Any flip keeps that method on recheck tickets." **Off-machine alert, 2026-11-12:** "not now", on the January list (section 6) |
+| D12 | Drill | **Instructed by you, 2026-11-11:** one drill ticket from that day's close, to rehearse the order mechanics in paperMoney: a liquid name, a buy stop-limit entry near the market, a 1st-triggers-OCO bracket with a sell limit target and a sell stop, all GTC, sized on the $1,500 basis; the 8-check on both screenshots, including that the bracket goes live correctly after the fill; counted in the 8-check record and kept out of the paper P&L ledger. **Instructed by you, 2026-11-12:** "Drill: not placed. Issue a fresh ticket from tonight's close." DRILL-2026-11-11-01 was never sent and is void (8-check record row seq 9); DRILL-2026-11-12-01, from the 2026-11-12 close, replaces it under the same instruction. **Ruled 2026-11-12** ("yes on items 1 to 8 as recommended"): the drill rules (the construction T = max(max(close, AH last) + max(0.10 ATR, $0.05), AH ask + $0.01) rounded up; end lines; out of the paper book and the forward log; later drills count only if you say so when asking; items 3 and 7 provisional until the golden probe; numbering; interim scoring) and the 8-check changes (item 5's STD on the sell stop, item 8's expected set, the after-fill re-read for every placement, the activation additions, placed or not placed, simulator artifacts as incidents, two records). "DRILL-2026-11-12-01 counts both ways" in Check 3 |
 
 **Pass-rule additions:** A1, A2, A3, A4 and A6 approved. A5 approved **as a pass
 rule (P5)**: 1,000 random-entry runs, 95% bar, not report-only.

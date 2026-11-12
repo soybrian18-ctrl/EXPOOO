@@ -31,7 +31,7 @@ from dataclasses import replace
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "loops"))
 
 from phase2 import fills as F  # noqa: E402
-from phase2.params import PARAMS, params_hash, unset  # noqa: E402
+from phase2.params import PARAMS, PENDING_RULING, params_hash, unset  # noqa: E402
 
 P0 = PARAMS                                           # the parameter set as it stands
 X2 = replace(P0, cost_mult=PARAMS.cost_sensitivity_mult)   # the "costs x 2" row: every cost doubles
@@ -1469,7 +1469,10 @@ class ParamsTests(unittest.TestCase):
         min_forward_trades_floor=10, check3_placements=10, go_live_target="2026-11-23",
         feasibility_spans=(("2022-11-23", "2023-01-13"), ("2023-11-23", "2024-01-12")),
         # 4
-        nightly_run_et="17:30", nightly_retry_et=("19:30", "21:00", "06:30"), bar_final_cutoff_et=None,
+        evening_scan_et="17:30", evening_retry_et=("18:15", "19:00"), recheck_start_et="01:00", recheck_every_min=30,
+        recheck_last_et="07:30", recheck_late_every_min=60, alert_by_et="08:30", watchdog_evening_et="19:30",
+        watchdog_morning_et="08:00", watchdog_every_min=60, drill_entry_atr=0.10, drill_entry_min=0.05,
+        drill_window_sessions=3,
         completeness_min=0.99, token_min_hours=3.0, request_limit_per_min=100, refresh_overlap_sessions=15,
         missing_bar_cusip_sessions=2, sector_map_min_agreement=0.90, ticket_deadline_et="09:25",
         live_balance_baseline=1.01,
@@ -1481,8 +1484,14 @@ class ParamsTests(unittest.TestCase):
         for name, want in self.SPEC.items():
             self.assertEqual(actual[name], want, name)
 
-    def test_only_the_bar_final_cutoff_is_still_unset(self):
-        self.assertEqual(unset(), ["bar_final_cutoff_et"])
+    def test_nothing_blocks_the_freeze_after_the_2026_11_12_rulings(self):
+        """No value is None, and nothing awaits a ruling: the owner ruled the night-schedule and drill fields on
+        2026-11-12, so params.PENDING_RULING is empty. The mechanism stays for a later proposal."""
+        self.assertEqual(PENDING_RULING, ())
+        self.assertEqual(unset(), [])
+        fields = {f.name for f in dataclasses.fields(PARAMS)}
+        self.assertTrue(set(PENDING_RULING) <= fields, set(PENDING_RULING) - fields)
+        self.assertEqual(unset(replace(PARAMS, decision_date=None)), ["decision_date"])   # a None is still listed
 
     def test_paper_sizing_numbers_match_the_approved_rules(self):
         p = PARAMS

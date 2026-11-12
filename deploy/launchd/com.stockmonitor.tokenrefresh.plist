@@ -3,8 +3,7 @@
 <!--
   Loop 4 -- Token Refresh Monitor. TEMPLATE ONLY -- NOT LOADED.
   Before deploying (after all four loops are built + reviewed):
-    1. Replace every {{PROJECT_ROOT}} with the absolute project path
-       (e.g. /Users/boypolo/STOCK/expooo).
+    1. Replace every {{PROJECT_ROOT}} with the absolute project path.
     2. Copy to ~/Library/LaunchAgents/com.stockmonitor.tokenrefresh.plist
     3. launchctl load ~/Library/LaunchAgents/com.stockmonitor.tokenrefresh.plist
   Runs EVERY DAY at 08:30 local (7 days/week) so weekend token expiries are warned.
