@@ -38,9 +38,14 @@ Caller contract:
     error, never a silently unfiltered or base-cost number.
 
 OOS seal (spec 3.7 step 2): ``step`` refuses every session inside the sealed
-out-of-sample window (``params.oos_start`` .. ``params.oos_end``) unless the
-caller names an unseal. There are two, and a contract test pins where each may
-appear:
+out-of-sample window, 2025-01-02 .. 2026-10-30 (fixed here, whatever window a
+params set carries), unless the caller names an unseal. The unseals are private
+objects compared by identity, so no string can stand in for one. There are two.
+A contract test pins every place a scanned repo file writes either name and
+fails a lookup of this module by a computed name (getattr, vars, __dict__). It
+cannot see code outside the repo, or every dynamic route inside it, so the
+backtest runner's check of the committed pick is the real guard for
+UNSEALED_BY_PICK:
   * ``UNSEALED_BY_PICK``    -- passed only by the backtest runner, after it has
     verified the committed pick.json;
   * ``KNOWN_ANSWER_REPLAY`` -- the one exemption, and a narrow one: it lets
@@ -107,10 +112,28 @@ CANCEL_REPLACED = "replaced"                       # a newer signal on the same 
 _CANCEL_REASONS = frozenset({CANCEL_TRIGGERED_UNFILLED, CANCEL_INVALIDATED, CANCEL_BREADTH, CANCEL_REPLACED})
 
 # --- OOS seal (spec 3.7 step 2) ----------------------------------------------
-SEALED = "sealed"                                  # the default: OOS sessions are refused
-UNSEALED_BY_PICK = "unsealed_by_pick"              # the backtest runner, after verifying the committed pick
-KNOWN_ANSWER_REPLAY = "known_answer_replay"        # the experiment's 14 real fill records and their bars, nothing else
-_SEALS = frozenset({SEALED, UNSEALED_BY_PICK, KNOWN_ANSWER_REPLAY})
+class _Seal:
+    """A seal state. Compared by identity, so no string -- typed, computed, or read from a file, the
+    environment or a command line -- can stand in for an unseal."""
+
+    __slots__ = ("_name",)
+
+    def __init__(self, name: str) -> None:
+        self._name = name
+
+    def __repr__(self) -> str:
+        return f"<seal {self._name}>"
+
+    def __reduce__(self):
+        raise TypeError("a seal cannot be serialized or reconstructed")
+
+
+SEALED = _Seal("sealed")                           # the default: OOS sessions are refused
+UNSEALED_BY_PICK = _Seal("unsealed-by-pick")       # the backtest runner, after verifying the committed pick
+KNOWN_ANSWER_REPLAY = _Seal("known-answer")        # exact replays of the experiment's 14 real fills, nothing else
+_SEALS = (SEALED, UNSEALED_BY_PICK, KNOWN_ANSWER_REPLAY)
+# The spec's window, fixed here as well: a params set carrying another window cannot open this one.
+_SPEC_OOS_WINDOW = (dt.date(2025, 1, 2), dt.date(2026, 10, 30))
 
 _SCALE = 1_000_000      # price comparisons in millionths of a dollar
 
@@ -246,19 +269,24 @@ def _is_known_answer(order: "Order", session: dt.date) -> bool:
     return False
 
 
-def _check_seal(order: "Order", session: dt.date, seal: str, params: Params) -> None:
-    if seal not in _SEALS:
-        raise ValueError(f"unknown seal state {seal!r}; pass SEALED, UNSEALED_BY_PICK or KNOWN_ANSWER_REPLAY")
-    if seal == UNSEALED_BY_PICK:
+def _check_seal(order: "Order", session: dt.date, seal, params: Params) -> None:
+    if not any(seal is s for s in _SEALS):
+        raise ValueError(f"unknown seal {seal!r}; pass fills.SEALED, fills.UNSEALED_BY_PICK or fills.KNOWN_ANSWER_REPLAY")
+    if seal is UNSEALED_BY_PICK:
         return
     first, last = _oos_window(params.oos_start, params.oos_end)
-    if not first <= session <= last:
+    if first > last:
+        raise ValueError(f"inverted OOS window in params: {first}..{last}")
+    spec_first, spec_last = _SPEC_OOS_WINDOW
+    in_spec = spec_first <= session <= spec_last
+    if not (in_spec or first <= session <= last):
         return
-    if seal == KNOWN_ANSWER_REPLAY and _is_known_answer(order, session):
+    if seal is KNOWN_ANSWER_REPLAY and _is_known_answer(order, session):
         return
-    scope = " and is not one of the 14 known-answer records" if seal == KNOWN_ANSWER_REPLAY else ""
+    scope = " and is not one of the 14 known-answer records" if seal is KNOWN_ANSWER_REPLAY else ""
+    window = f"{spec_first}..{spec_last}" if in_spec else f"{first}..{last} (the params window)"
     raise SealedSessionError(f"{order.ticker}: session {session} is inside the sealed out-of-sample window "
-                             f"{first}..{last}{scope} (spec 3.7 step 2)")
+                             f"{window}{scope} (spec 3.7 step 2)")
 
 
 # --- transitions --------------------------------------------------------------
@@ -336,7 +364,7 @@ def _held_session(o: Order, session: dt.date, bar: Bar, params: Params) -> Order
 
 
 def step(order: Order, session: dt.date, bar: Optional[Bar], *, breadth_ok: bool, params: Params,
-         seal: str = SEALED) -> Order:
+         seal: _Seal = SEALED) -> Order:
     """Advance one session. ``bar`` is None when the symbol has no bar that session.
 
     ``breadth_ok`` is the breadth test at THIS session's close (pass True with
@@ -384,7 +412,7 @@ def step(order: Order, session: dt.date, bar: Optional[Bar], *, breadth_ok: bool
 
 
 def run(order: Order, sessions: Iterable[tuple[dt.date, Optional[Bar], bool]], *, params: Params,
-        seal: str = SEALED) -> Order:
+        seal: _Seal = SEALED) -> Order:
     """Advance through (session, bar, breadth_ok) tuples until the order is terminal.
 
     Running an order from its signal day over the stored sessions is the one way
@@ -431,7 +459,7 @@ def r_multiple(order: Order) -> float:
 
 
 def evaluate_at_cutoff(order: Order, cutoff: dt.date, cutoff_close: Optional[float],
-                       params: Params, *, seal: str = SEALED) -> Optional[Evaluation]:
+                       params: Params, *, seal: _Seal = SEALED) -> Optional[Evaluation]:
     """Value a trade at a cutoff session's close. THE one rule for trades open at a cutoff.
 
     The forward window, every historical analog band window, the in-sample pick
@@ -473,7 +501,7 @@ def evaluate_at_cutoff(order: Order, cutoff: dt.date, cutoff_close: Optional[flo
 
 
 def close_at_mark(order: Order, cutoff: dt.date, cutoff_close: float, params: Params, *,
-                  seal: str = SEALED) -> Order:
+                  seal: _Seal = SEALED) -> Order:
     """Close a still-open trade at a cutoff close (exit kind "mark"). Same number as evaluate_at_cutoff."""
     _check_seal(order, cutoff, seal, params)
     if order.state != OPEN or order.last_session != cutoff:

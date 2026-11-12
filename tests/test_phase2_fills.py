@@ -667,6 +667,37 @@ class OosSealTests(unittest.TestCase):
         # outside the sealed window the exemption changes nothing
         self.assertEqual(self.known("TEST", dt.date(2026, 10, 30), dt.date(2026, 11, 2), 5.33, 5.00, seal=ka).state, F.OPEN)
 
+    def test_a_string_or_a_look_alike_object_never_unseals(self):
+        for seal in ("unsealed_by_pick", "known_answer_replay", "UNSEALED_BY_PICK", "sealed",
+                     type(F.SEALED)("unsealed-by-pick"), type(F.SEALED)("known-answer")):
+            with self.subTest(seal=seal):
+                with self.assertRaises(ValueError):
+                    self.one(dt.date(2026, 6, 1), dt.date(2026, 6, 2), seal=seal)
+
+    def test_a_seal_cannot_be_serialized_or_rebuilt(self):
+        import copy
+        import pickle
+        for seal in (F.SEALED, F.UNSEALED_BY_PICK, F.KNOWN_ANSWER_REPLAY):
+            with self.assertRaises(TypeError):
+                pickle.dumps(seal)
+            with self.assertRaises(TypeError):
+                copy.deepcopy(seal)
+
+    def test_params_with_another_window_cannot_open_the_spec_window(self):
+        sealed_sessions = ((dt.date(2024, 12, 31), dt.date(2025, 1, 2)), (dt.date(2025, 6, 2), dt.date(2025, 6, 3)),
+                           (dt.date(2026, 10, 29), dt.date(2026, 10, 30)))
+        for moved in (replace(P0, oos_start="1900-01-01", oos_end="1900-01-01"),
+                      replace(P0, oos_start="2099-01-01", oos_end="2099-12-31")):
+            for signal, session in sealed_sessions:
+                with self.subTest(window=(moved.oos_start, moved.oos_end), session=session):
+                    with self.assertRaises(F.SealedSessionError):
+                        self.one(signal, session, params=moved)
+            self.assertEqual(self.one(dt.date(2026, 10, 30), dt.date(2026, 11, 2), params=moved).state, F.OPEN)
+
+    def test_an_inverted_window_is_an_error(self):
+        with self.assertRaises(ValueError):
+            self.one(dt.date(2023, 1, 9), dt.date(2023, 1, 10), params=replace(P0, oos_start="2026-10-30", oos_end="2025-01-02"))
+
     def test_run_is_sealed_too(self):
         d = dt.date(2025, 1, 2)
         sessions = [(d, F.Bar(d, 19.80, 20.10, 19.70, 20.05), True)]
@@ -682,8 +713,12 @@ class OosSealTests(unittest.TestCase):
 
     def test_the_window_is_read_from_params(self):
         only_day_1 = replace(P0, oos_start=day(1).isoformat(), oos_end=day(1).isoformat())
-        with self.assertRaises(F.SealedSessionError):
+        with self.assertRaises(F.SealedSessionError) as refused:
             feed(order(), [bar(*TRIGGER_ENTRY)], params=only_day_1)
+        self.assertIn(f"window {day(1)}..{day(1)} (the params window) (spec", str(refused.exception))
+        with self.assertRaises(F.SealedSessionError) as refused:
+            self.one(dt.date(2026, 6, 1), dt.date(2026, 6, 2), params=only_day_1)
+        self.assertIn("window 2025-01-02..2026-10-30 (spec", str(refused.exception))      # the window that matched
         only_day_2 = replace(P0, oos_start=day(2).isoformat(), oos_end=day(2).isoformat())
         self.assertEqual(feed(order(), [bar(*TRIGGER_ENTRY)], params=only_day_2).state, F.OPEN)
         self.assertEqual((PARAMS.oos_start, PARAMS.oos_end), ("2025-01-02", "2026-10-30"))
