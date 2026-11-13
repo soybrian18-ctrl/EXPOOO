@@ -957,11 +957,24 @@ overnight recheck alone, placed before the open (by 09:25).*
          tickets come from the overnight recheck alone and are placed before
          the open (by 09:25). The evening scan still runs and writes its
          tickets without sending them, so the recheck can compare them;
+       - your answers of 2026-11-12, in your words: "Keep all three k. The
+         December pick can land on any of them, so the evidence has to cover
+         every variant paper might trade. Count flips with the breadth filter
+         on and off the same way, if you don't already." / "Yes. One flip
+         after acceptance moves that method back to recheck tickets until the
+         January review." / "Skip it like a missed night. The bar then needs
+         at least 6 compared nights through 11-20. Fewer than 6 means not
+         met." (The last answers which nights count: a night with a folder
+         but no usable evening sample is skipped like a missed night.)
        - `compare_bars.py` prints, per method, "acceptance bar (ruled
          2026-11-12): met / not met" over every sampled night, LATE nights
-         included (a MISSED-NIGHT has no evening sample to compare). It counts a ticket under breadth on, at any k, (my strict reading, every stop width, not only the paper default k = 1.5; say if you want it narrowed)
-         that changed, disappeared or appeared; a night without the ticket
-         comparison cannot show zero flips and leaves the bar not met.
+         included; a MISSED-NIGHT or a night with no usable evening sample is
+         skipped. A flip is a ticket, at any of the three k, with the breadth
+         filter on or off, that changed, disappeared or appeared. A night
+         without the ticket comparison cannot show zero flips and leaves the
+         bar not met, and so do fewer than 6 compared nights through 11-20.
+       - After acceptance, one flip on any later night moves that method back
+         to recheck tickets until the January review; the nightly job (B5) checks this every night.
      - **Also ruled 2026-11-12:** LATE nights stay out of the pooled numbers
        (`--include-late` adds them only on request); the 1-minute bars are
        kept; go-live is recorded as a reviewed edit of
@@ -1586,6 +1599,9 @@ Every code milestone is shown as a diff before commit.
   method until you accept the report, gets recheck tickets placed before the
   open (section 4, step 4). Go-live is recorded as a reviewed edit of
   `compare_bars.GO_LIVE_ACTUAL`.
+  From acceptance on, it re-checks each method every night, and one flip
+  moves that method back to recheck tickets until the January review
+  (ruled 2026-11-12).
 - **B6a.** IS run and pick commit (early December). I ask then whether paper
   tickets switch to the picks (approved in principle, D9).
 - **B6b.** Sealed OOS after the 2026-12-30 close, and the Part 1 report.

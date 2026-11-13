@@ -2294,22 +2294,38 @@ class MultiNight(TempRoot):
         Night A's breadth gate closes on the final bars, so its M1 and M2 tickets disappear: neither is met. The
         LATE night is judged too (it was sampled); the MISSED-NIGHT has no evening sample."""
         acc = self.rep["acceptance"]
-        for m, flips in (("m1", 1), ("m2", 2)):
+        # breadth on: M1 1 ticket and M2 2 tickets disappear; breadth off: an M1 ticket appears and an M2 one
+        # disappears; each at all three k
+        for m, flips in (("m1", 1 + 1), ("m2", 2 + 1)):
             self.assertFalse(acc[m]["met"], m)
             self.assertEqual(acc[m]["flip_nights"], ["2026-11-30"], m)
             self.assertEqual((acc[m]["nights"], acc[m]["flips"]), (3, flips * len(PARAMS.stop_k)), m)
         text = CB.render(self.rep)
-        self.assertIn("M1 acceptance bar (ruled 2026-11-12): not met  (3 ticket flip(s) over 3 sampled night(s); "
+        self.assertIn("M1 acceptance bar (ruled 2026-11-12): not met  (6 ticket flip(s) over 3 sampled night(s); "
                       "ticket flips on 2026-11-30)", text)
         self.assertIn("M2 acceptance bar (ruled 2026-11-12): not met", text)
 
     def test_the_acceptance_bar_rules(self):
+        """The owner's rulings of 2026-11-12: every k, breadth on and off, NO-EVENING skipped like a missed night,
+        at least 6 compared nights."""
         def night(session, state="OK", run=True, **tally):
             return dict(session=session, state=state, signals=dict(run=run), tally=tally)
-        quiet = [night("2026-12-07"), night("2026-12-08", **{"tk_m1_1.5_confirmed": 3, "tk_m2_1.0_confirmed": 1})]
+        quiet = [night(f"2026-11-{d:02d}") for d in (13, 16, 17, 18, 19)] + [
+            night("2026-11-20", **{"tk_m1_1.5_confirmed": 3, "tk_m2_1.0_confirmed": 1, "tko_m1_1.0_confirmed": 2})]
         acc = CB.acceptance(quiet)
-        self.assertTrue(acc["m1"]["met"] and acc["m2"]["met"])
+        self.assertTrue(acc["m1"]["met"] and acc["m2"]["met"])               # six compared nights, no flip
         self.assertIsNone(acc["m1"]["reason"])
+        acc = CB.acceptance(quiet[1:])                                       # five: fewer than 6 is not met
+        self.assertFalse(acc["m1"]["met"] or acc["m2"]["met"])
+        self.assertEqual(acc["m1"]["reason"], "only 5 compared night(s) through 11-20; the bar needs at least 6")
+        acc = CB.acceptance(quiet[1:] + [night("2026-11-23")])               # a night after 11-20 does not make 6
+        self.assertFalse(acc["m1"]["met"] or acc["m2"]["met"])
+        acc = CB.acceptance(quiet[1:] + [night("2026-12-09", state="NO-EVENING", run=False)])
+        self.assertEqual(acc["m1"]["nights"], 5)                             # a NO-EVENING night is skipped
+        for x in ("changed", "disappeared", "appeared"):                   # breadth off counts the same way
+            acc = CB.acceptance(quiet + [night("2026-12-09", **{f"tko_m1_1.0_{x}": 1})])
+            self.assertFalse(acc["m1"]["met"], x)
+            self.assertTrue(acc["m2"]["met"], x)
         for x in ("changed", "disappeared", "appeared"):                  # either direction, any k
             acc = CB.acceptance(quiet + [night("2026-12-09", **{f"tk_m2_2.0_{x}": 1})])
             self.assertTrue(acc["m1"]["met"], x)                            # M1 and M2 are judged separately

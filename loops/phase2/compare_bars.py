@@ -53,9 +53,9 @@ ACCEPTANCE BAR (the owner's ruling of 2026-11-12, spec 4 step 4, "What it decide
   tickets only if it had zero flips on every sampled night, in either direction (a ticket changed, disappeared,
   or appeared only on final bars). Judge M1 and M2 separately. Any flip keeps that method on recheck tickets."
   The report prints, per method, "acceptance bar (ruled 2026-11-12): met / not met" over every reported night,
-  LATE nights included (only a MISSED-NIGHT is skipped: it has no evening sample, so it is not a sampled night;
-  --include-late does not change it): a flip is a ticket under breadth on, at any k, that changed, disappeared
-  or appeared. A night without the ticket comparison (no signal level, or a state other than OK or LATE) cannot
+  LATE nights included (a MISSED-NIGHT or NO-EVENING night is skipped: it has no evening sample, so it is not a
+  sampled night; --include-late does not change it): a flip is a ticket, at any k, with the breadth filter on or
+  off, that changed, disappeared or appeared; at least 6 compared nights are needed. A night without the ticket comparison (no signal level, or a state other than OK or LATE) cannot
   show zero flips, so it leaves the bar not met; so does a report with no such night. The bar is judged only
   over all nights (--all, or no sessions named).
 
@@ -1029,6 +1029,15 @@ def _signal_level(session: dt.date, pairs: list[dict], ev: dict, fi: dict, refer
                     T[f"{tkey}_{'confirmed' if same else 'changed'}"] += 1
                 elif ta or tb:
                     T[f"{tkey}_{'disappeared' if ta else 'appeared'}"] += 1
+                # the same ticket with the breadth filter off (the owner, 2026-11-12: count flips with the filter on
+                # and off the same way; the December pick can land on either)
+                oa, ob = bool(la and la["sizable"]), bool(lb and lb["sizable"])
+                okey = f"tko_{m}_{k}"
+                if oa and ob:
+                    same = all(la[f] == lb[f] for f in ("T", "C", "S", "P", "N"))
+                    T[f"{okey}_{'confirmed' if same else 'changed'}"] += 1
+                elif oa or ob:
+                    T[f"{okey}_{'disappeared' if oa else 'appeared'}"] += 1
     # the day-t fill path
     for p in used:
         a = p["a"]
@@ -1140,18 +1149,23 @@ def night_folders(root: Path) -> tuple[list[Path], list[dict]]:
 
 
 ACCEPTANCE_FLIPS = ("changed", "disappeared", "appeared")     # a ticket's flips, either direction (spec 4 step 4)
+ACCEPTANCE_MIN_NIGHTS = 6                                      # the owner, 2026-11-12: at least 6 compared nights ...
+ACCEPTANCE_THROUGH = dt.date(2026, 11, 20)                     # ... through 11-20 (flips count on every night)
+ACCEPTANCE_SKIPPED = ("MISSED-NIGHT", "NO-EVENING")            # no evening sample: not a sampled night
 
 
 def acceptance(nights: list[dict]) -> dict:
     """The owner's acceptance bar (ruled 2026-11-12), per method: met only if every sampled night (LATE ones included;
-    a MISSED-NIGHT has no evening sample) ran the ticket comparison and had zero ticket flips for that method (breadth on, any k: changed,
-    disappeared or appeared only on final bars). M1 and M2 are judged separately."""
-    judged = [n for n in nights if n["state"] != "MISSED-NIGHT"]
+    a MISSED-NIGHT or NO-EVENING night has no evening sample and is skipped) ran the ticket comparison and had zero
+    ticket flips for that method (every k, breadth filter on and off: changed, disappeared or appeared only on final
+    bars), and at least ACCEPTANCE_MIN_NIGHTS nights through ACCEPTANCE_THROUGH were compared. M1 and M2 are judged separately."""
+    judged = [n for n in nights if n["state"] not in ACCEPTANCE_SKIPPED]
+    through = [n for n in judged if dt.date.fromisoformat(n["session"]) <= ACCEPTANCE_THROUGH]
     unjudged = [n["session"] for n in judged if n["state"] not in ("OK", "LATE") or not (n["signals"] or {}).get("run")]
     out = {}
     for m in ("m1", "m2"):
-        flips = {n["session"]: sum(n["tally"].get(f"tk_{m}_{k}_{x}", 0) for k in PARAMS.stop_k
-                                   for x in ACCEPTANCE_FLIPS) for n in judged}
+        flips = {n["session"]: sum(n["tally"].get(f"{pre}_{m}_{k}_{x}", 0) for pre in ("tk", "tko")
+                                   for k in PARAMS.stop_k for x in ACCEPTANCE_FLIPS) for n in judged}
         flip_nights = [s for s, v in flips.items() if v]
         if not judged:
             why = "no sampled night"
@@ -1159,6 +1173,9 @@ def acceptance(nights: list[dict]) -> dict:
             why = f"ticket flips on {', '.join(flip_nights)}"
         elif unjudged:
             why = f"no ticket comparison on {', '.join(unjudged)}"
+        elif len(through) < ACCEPTANCE_MIN_NIGHTS:
+            why = (f"only {len(through)} compared night(s) through {ACCEPTANCE_THROUGH:%m-%d}; the bar needs at least "
+                   f"{ACCEPTANCE_MIN_NIGHTS}")
         else:
             why = None
         out[m] = dict(met=why is None, nights=len(judged), flips=sum(flips.values()), flip_nights=flip_nights,

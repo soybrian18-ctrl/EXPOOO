@@ -98,6 +98,8 @@ Process:
 
 - Flip report acceptance bar (the user's words, 2026-11-12): "Flip report acceptance bar, fixed now before the report lands: a method gets evening tickets only if it had zero flips on every sampled night, in either direction (a ticket changed, disappeared, or appeared only on final bars). Judge M1 and M2 separately. Any flip keeps that method on recheck tickets."
 
+- Acceptance bar details (the user's words, 2026-11-12): "Keep all three k. The December pick can land on any of them, so the evidence has to cover every variant paper might trade. Count flips with the breadth filter on and off the same way, if you don't already." "Yes. One flip after acceptance moves that method back to recheck tickets until the January review." On a night with no usable evening sample: "Skip it like a missed night. The bar then needs at least 6 compared nights through 11-20. Fewer than 6 means not met."
+
 - Statistics and the sealed window (the user's standing rule, 2026-11-12): "New standing rule: before you compute any statistic, state its session range. If it uses 2025-01-02 to 2026-10-30 for anything beyond look-back, stop and ask me first."
 
 - Breadth filter (paper default on): no new entry while fewer than half the universe trades above its 50-session average.
