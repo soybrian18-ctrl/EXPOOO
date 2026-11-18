@@ -2279,6 +2279,22 @@ class MultiNight(TempRoot):
         self.assertEqual(late["names"]["already_final"], ["ALRDY"])
         self.assertEqual(late["tally"]["pairs"], 2)                            # ALRDY is out of every denominator
 
+    def test_an_on_time_night_with_an_already_final_candle_is_late_and_not_one_of_the_6(self):
+        """The owner, 2026-11-18: a night whose evening sample started on time but caught an already-final candle is
+        LATE too, so it never counts toward the acceptance bar's 6 (its flips would still count)."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            simple_night(root, D(2026, 12, 1), at(2026, 12, 1, 17, 31), at(2026, 12, 2, 1, 30),
+                         names=("FLAT1", "FLAT2", "ALRDY"), already_final=("ALRDY",))
+            n = CB.analyze_night(root / "2026-12-01")
+        self.assertEqual(n["state"], "LATE")
+        self.assertEqual(n["late_reasons"], ["1 evening candle(s) already final"])   # on time: the only reason
+        quiet = [dict(session=f"2026-11-{d:02d}", state="OK", signals=dict(run=True), tally={})
+                 for d in (13, 16, 17, 18, 19)]
+        acc = CB.acceptance(quiet + [dict(n, session="2026-11-20")])
+        self.assertFalse(acc["m1"]["met"] or acc["m2"]["met"])
+        self.assertIn("only 5 compared night(s) through 11-20 (LATE nights not counted)", acc["m1"]["reason"])
+
     def test_pooling_excludes_late_and_missed_nights(self):
         self.assertEqual(self.rep["contributing"], ["2026-11-30", "2026-12-04"])
         t = self.rep["pooled"]["tally"]
@@ -2307,7 +2323,7 @@ class MultiNight(TempRoot):
 
     def test_the_acceptance_bar_rules(self):
         """The owner's rulings of 2026-11-12: every k, breadth on and off, NO-EVENING skipped like a missed night,
-        at least 6 compared nights."""
+        at least 6 compared nights; and of 2026-11-18: a LATE night never counts toward the 6, but its flips count."""
         def night(session, state="OK", run=True, **tally):
             return dict(session=session, state=state, signals=dict(run=run), tally=tally)
         quiet = [night(f"2026-11-{d:02d}") for d in (13, 16, 17, 18, 19)] + [
@@ -2317,7 +2333,8 @@ class MultiNight(TempRoot):
         self.assertIsNone(acc["m1"]["reason"])
         acc = CB.acceptance(quiet[1:])                                       # five: fewer than 6 is not met
         self.assertFalse(acc["m1"]["met"] or acc["m2"]["met"])
-        self.assertEqual(acc["m1"]["reason"], "only 5 compared night(s) through 11-20; the bar needs at least 6")
+        self.assertEqual(acc["m1"]["reason"],
+                         "only 5 compared night(s) through 11-20 (LATE nights not counted); the bar needs at least 6")
         acc = CB.acceptance(quiet[1:] + [night("2026-11-23")])               # a night after 11-20 does not make 6
         self.assertFalse(acc["m1"]["met"] or acc["m2"]["met"])
         acc = CB.acceptance(quiet[1:] + [night("2026-12-09", state="NO-EVENING", run=False)])
@@ -2336,6 +2353,23 @@ class MultiNight(TempRoot):
         self.assertFalse(acc["m1"]["met"])                                 # a LATE night's flip counts: it was sampled
         self.assertEqual(acc["m1"]["flip_nights"], ["2026-12-09"])
         self.assertTrue(acc["m2"]["met"])                                  # the missed night is not judged
+        # standing rule of 2026-11-18: a LATE night never counts toward the 6 ...
+        late_quiet = [night(n["session"], state="LATE") if n["session"] == "2026-11-17" else n for n in quiet]
+        acc = CB.acceptance(late_quiet)
+        self.assertFalse(acc["m1"]["met"] or acc["m2"]["met"])
+        self.assertEqual(acc["m1"]["reason"],
+                         "only 5 compared night(s) through 11-20 (LATE nights not counted); the bar needs at least 6")
+        self.assertEqual(acc["m1"]["nights"], 6)                             # ... though it is still a judged night
+        acc = CB.acceptance(quiet + [night("2026-11-12", state="LATE")])     # a quiet LATE night adds nothing, harms nothing
+        self.assertTrue(acc["m1"]["met"] and acc["m2"]["met"])
+        acc = CB.acceptance([night(f"2026-11-{d:02d}", state="LATE") for d in (11, 12, 13, 16, 17, 18, 19, 20)])
+        self.assertFalse(acc["m1"]["met"] or acc["m2"]["met"])               # eight LATE nights still make 0 of 6
+        self.assertIn("only 0 compared night(s)", acc["m1"]["reason"])
+        acc = CB.acceptance(late_quiet + [night("2026-11-12"),               # the 6 made up from OK nights, and a
+                                          night("2026-11-11", state="LATE", **{"tko_m2_2.0_appeared": 1})])
+        self.assertTrue(acc["m1"]["met"])                                    # LATE night's flip still fails M2
+        self.assertFalse(acc["m2"]["met"])
+        self.assertEqual(acc["m2"]["flip_nights"], ["2026-11-11"])
         for bad in (night("2026-12-09", run=False), night("2026-12-09", state="NO-FINAL", run=False)):
             acc = CB.acceptance(quiet + [bad])
             self.assertFalse(acc["m1"]["met"] or acc["m2"]["met"])        # zero flips not shown on that night

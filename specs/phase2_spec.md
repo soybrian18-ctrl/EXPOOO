@@ -37,7 +37,9 @@ it appears:
   (section 6).
 Two more rulings of yours, 2026-11-12: the flip report's acceptance bar
 (section 4, step 4, "What it decides") and a standing rule on statistics
-(3.7). Nothing in this spec awaits your ruling. Still to come, as scheduled:
+(3.7). One more, 2026-11-18: a LATE night never counts toward the acceptance
+bar's 6-night minimum, but its flips still count (section 4, step 4). Nothing
+in this spec awaits your ruling. Still to come, as scheduled:
 the flip report itself and your acceptance of it (section 4, step 4), the
 golden probe (section 5), the December question on paper picks (D9) and the
 January decision (section 6). Besides factual records, two edits of approved
@@ -973,6 +975,15 @@ overnight recheck alone, placed before the open (by 09:25).*
          filter on or off, that changed, disappeared or appeared. A night
          without the ticket comparison cannot show zero flips and leaves the
          bar not met, and so do fewer than 6 compared nights through 11-20.
+       - **Standing rule, ruled 2026-11-18:** "a LATE night never counts
+         toward the 6-night minimum, but a flip on a LATE night still counts
+         against the method." The first case was 11-17 (the Mac slept on
+         battery; its evening sample started 21:57 ET, after the 19:30
+         cutoff): skipped toward the 6.
+         Asked whether this covers a night that started on time but caught
+         an evening candle already final (also LATE in `compare_bars.py`),
+         you answered, 2026-11-18: "Yes, leave it out." So any LATE night,
+         for either reason, is left out of the 6.
        - After acceptance, one flip on any later night moves that method back
          to recheck tickets until the January review; the nightly job (B5) checks this every night.
      - **Also ruled 2026-11-12:** LATE nights stay out of the pooled numbers

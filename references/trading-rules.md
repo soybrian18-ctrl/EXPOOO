@@ -100,6 +100,8 @@ Process:
 
 - Acceptance bar details (the user's words, 2026-11-12): "Keep all three k. The December pick can land on any of them, so the evidence has to cover every variant paper might trade. Count flips with the breadth filter on and off the same way, if you don't already." "Yes. One flip after acceptance moves that method back to recheck tickets until the January review." On a night with no usable evening sample: "Skip it like a missed night. The bar then needs at least 6 compared nights through 11-20. Fewer than 6 means not met."
 
+- LATE nights and the acceptance bar (the user's standing rule, 2026-11-18): "a LATE night never counts toward the 6-night minimum, but a flip on a LATE night still counts against the method." First applied to 11-17, which ran LATE and is skipped toward the 6. Asked whether a night that started on time but caught an evening candle already final (also LATE) is left out too, the user answered, 2026-11-18: "Yes, leave it out." Carried out in specs/phase2_spec.md section 4, step 4.
+
 - Statistics and the sealed window (the user's standing rule, 2026-11-12): "New standing rule: before you compute any statistic, state its session range. If it uses 2025-01-02 to 2026-10-30 for anything beyond look-back, stop and ask me first."
 
 - Breadth filter (paper default on): no new entry while fewer than half the universe trades above its 50-session average.

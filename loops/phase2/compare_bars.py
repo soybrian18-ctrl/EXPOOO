@@ -55,8 +55,10 @@ ACCEPTANCE BAR (the owner's ruling of 2026-11-12, spec 4 step 4, "What it decide
   The report prints, per method, "acceptance bar (ruled 2026-11-12): met / not met" over every reported night,
   LATE nights included (a MISSED-NIGHT or NO-EVENING night is skipped: it has no evening sample, so it is not a
   sampled night; --include-late does not change it): a flip is a ticket, at any k, with the breadth filter on or
-  off, that changed, disappeared or appeared; at least 6 compared nights are needed. A night without the ticket comparison (no signal level, or a state other than OK or LATE) cannot
-  show zero flips, so it leaves the bar not met; so does a report with no such night. The bar is judged only
+  off, that changed, disappeared or appeared; at least 6 compared nights through 11-20 are needed, and (standing
+  rule, 2026-11-18) a LATE night never counts toward the 6, though a flip on it still counts against the method.
+  A night without the ticket comparison (no signal level, or a state other than OK or LATE) cannot show zero
+  flips, so it leaves the bar not met; so does a report with no such night. The bar is judged only
   over all nights (--all, or no sessions named).
 
 Order levels come from loops/phase2/orders.py only (review D6). It must import and pass a startup self-check on
@@ -1152,15 +1154,19 @@ ACCEPTANCE_FLIPS = ("changed", "disappeared", "appeared")     # a ticket's flips
 ACCEPTANCE_MIN_NIGHTS = 6                                      # the owner, 2026-11-12: at least 6 compared nights ...
 ACCEPTANCE_THROUGH = dt.date(2026, 11, 20)                     # ... through 11-20 (flips count on every night)
 ACCEPTANCE_SKIPPED = ("MISSED-NIGHT", "NO-EVENING")            # no evening sample: not a sampled night
+ACCEPTANCE_NOT_COUNTED = ("LATE",)                             # the owner, 2026-11-18: judged for flips, never one of the 6
 
 
 def acceptance(nights: list[dict]) -> dict:
     """The owner's acceptance bar (ruled 2026-11-12), per method: met only if every sampled night (LATE ones included;
     a MISSED-NIGHT or NO-EVENING night has no evening sample and is skipped) ran the ticket comparison and had zero
     ticket flips for that method (every k, breadth filter on and off: changed, disappeared or appeared only on final
-    bars), and at least ACCEPTANCE_MIN_NIGHTS nights through ACCEPTANCE_THROUGH were compared. M1 and M2 are judged separately."""
+    bars), and at least ACCEPTANCE_MIN_NIGHTS nights through ACCEPTANCE_THROUGH were compared. M1 and M2 are judged
+    separately. Standing rule of 2026-11-18: a LATE night never counts toward ACCEPTANCE_MIN_NIGHTS, but a flip on a
+    LATE night still counts against the method."""
     judged = [n for n in nights if n["state"] not in ACCEPTANCE_SKIPPED]
-    through = [n for n in judged if dt.date.fromisoformat(n["session"]) <= ACCEPTANCE_THROUGH]
+    through = [n for n in judged if n["state"] not in ACCEPTANCE_NOT_COUNTED
+               and dt.date.fromisoformat(n["session"]) <= ACCEPTANCE_THROUGH]
     unjudged = [n["session"] for n in judged if n["state"] not in ("OK", "LATE") or not (n["signals"] or {}).get("run")]
     out = {}
     for m in ("m1", "m2"):
@@ -1174,8 +1180,8 @@ def acceptance(nights: list[dict]) -> dict:
         elif unjudged:
             why = f"no ticket comparison on {', '.join(unjudged)}"
         elif len(through) < ACCEPTANCE_MIN_NIGHTS:
-            why = (f"only {len(through)} compared night(s) through {ACCEPTANCE_THROUGH:%m-%d}; the bar needs at least "
-                   f"{ACCEPTANCE_MIN_NIGHTS}")
+            why = (f"only {len(through)} compared night(s) through {ACCEPTANCE_THROUGH:%m-%d} (LATE nights not "
+                   f"counted); the bar needs at least {ACCEPTANCE_MIN_NIGHTS}")
         else:
             why = None
         out[m] = dict(met=why is None, nights=len(judged), flips=sum(flips.values()), flip_nights=flip_nights,
