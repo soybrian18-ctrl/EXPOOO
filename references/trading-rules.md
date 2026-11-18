@@ -102,6 +102,8 @@ Process:
 
 - LATE nights and the acceptance bar (the user's standing rule, 2026-11-18): "a LATE night never counts toward the 6-night minimum, but a flip on a LATE night still counts against the method." First applied to 11-17, which ran LATE and is skipped toward the 6. Asked whether a night that started on time but caught an evening candle already final (also LATE) is left out too, the user answered, 2026-11-18: "Yes, leave it out." Carried out in specs/phase2_spec.md section 4, step 4.
 
+- Freeze, paper picks and go-live (the user, 2026-11-18, "All as recommended" on the B2 decision list): every commit and the B2 freeze wait for the user's word; paper tickets switch to the IS picks from the session after the pick commit; go-live comes as soon as B4 has passed its review and the re-freeze is committed, and the 2027-01-15 decision date does not move. Details in specs/phase2_spec.md section 8, B2.
+
 - Statistics and the sealed window (the user's standing rule, 2026-11-12): "New standing rule: before you compute any statistic, state its session range. If it uses 2025-01-02 to 2026-10-30 for anything beyond look-back, stop and ask me first."
 
 - Breadth filter (paper default on): no new entry while fewer than half the universe trades above its 50-session average.

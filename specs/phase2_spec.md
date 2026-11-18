@@ -38,8 +38,9 @@ it appears:
 Two more rulings of yours, 2026-11-12: the flip report's acceptance bar
 (section 4, step 4, "What it decides") and a standing rule on statistics
 (3.7). One more, 2026-11-18: a LATE night never counts toward the acceptance
-bar's 6-night minimum, but its flips still count (section 4, step 4). Nothing
-in this spec awaits your ruling. Still to come, as scheduled:
+bar's 6-night minimum, but its flips still count (section 4, step 4). And
+seven more that day on the B2 freeze, paper picks and go-live (section 8,
+B2). Nothing in this spec awaits your ruling. Still to come, as scheduled:
 the flip report itself and your acceptance of it (section 4, step 4), the
 golden probe (section 5), the December question on paper picks (D9) and the
 January decision (section 6). Besides factual records, two edits of approved
@@ -1592,6 +1593,28 @@ Every code milestone is shown as a diff before commit.
   now empty, so no field awaits a ruling. T's rounding (3.4) and the universe
   rules (3.1), which are not params fields and change backtest numbers, were
   ruled 2026-11-12 too.)*
+  **Ruled 2026-11-18** ("All as recommended"):
+  1. The freeze is a committed record, `specs/phase2_freeze.json`, written by
+     `loops/phase2_freeze.py`: the spec's SHA-256, the SHA-256 of `params.py`
+     and its `params_hash`, and one hash over every git-tracked file but the
+     record itself, read only when the working tree matches the index. The
+     freeze commit is the commit that adds that entry. A
+     test (`tests/test_phase2_freeze.py`) fails when the spec or the params
+     no longer match the last entry, so no edit after the freeze is silent.
+  2. The code hash covers every git-tracked file, older code included; logs,
+     `.env` and the token credential files are not tracked and are not in it.
+  3. Freeze now (B2), and one logged re-freeze at the end of B4 that adds the
+     NYSE calendar (B3) and the B4 code together. The last entry before the
+     first IS number is the binding freeze.
+  4. Inside B4: build, the full adversarial review of `signals.py`, the
+     re-freeze, and only then the feasibility counts and the flip replay.
+  5. `params.go_live_target` stays 2026-11-23: it is only a target, and the
+     actual go-live is recorded in `compare_bars.GO_LIVE_ACTUAL`.
+  6. D9: paper tickets switch to the IS picks from the session after the
+     pick commit (asked early, answered yes).
+  7. Go-live comes as soon as B4 has passed its review and the re-freeze is
+     committed; the 2027-01-15 decision date does not move. Every commit, the
+     freeze among them, waits for your word.
 - **B3. Pulls:** the directory, security types, bars from 2021-01-04, the
   yfinance split table, EDGAR 8-K Item 2.02 headers and SIC codes. About 4-5
   hours of machine time, most of it the paced EDGAR header pull.
@@ -1632,7 +1655,7 @@ Every code milestone is shown as a diff before commit.
 | D6 | Universe and splits | Security types plus directory rules; MLPs, royalty trusts and SPACs excluded; split table via yfinance; survivorship flagged. **Ruled 2026-11-12, for B3/B4 (3.1):** BDCs are in, known by their SEC 814- file number, not by name; MLPs are excluded by the approved K-1 criterion, not by name (so PAGP and HESM, 1099 issuers, are in); SPACs are also identified by SIC 6770. The stand-in sampler keeps its name rules |
 | D7 | Fills and costs | The model in 3.4, calibrated on the 14 real stop-outs before the freeze. **Ruled 2026-11-11: every stop exit pays 4 half-spreads; no separate slippage; a gap past the target needs P + 0.01; the costs x 2 row doubles every cost** |
 | D8 | Protocol | Fill-date windows; OOS sealed in code; pick eligibility; sealed OOS after 12-30; bug rules. **Ruled 2026-11-11: one seal exemption, for exact replays of the 14 known-answer records and the bars they need. Ruled 2026-11-12: sealed bars may be read as look-back to compute indicators (ATR, shelves, dollar volume, breadth) for any session after 2026-10-30; statistics aggregated over sealed sessions stay off-limits, except the 14 real fill records; the drill's fill-rate figure stays disclosed and is not repeated** |
-| D9 | Paper process | The ledger is the record, split into two records, the 8-check record and the paper ledger (**ruled 2026-11-12**, section 5); 2 slots per method; **SIC codes mapped to the 11 GICS sectors**; paper switches to the IS picks in December (asked again then) |
+| D9 | Paper process | The ledger is the record, split into two records, the 8-check record and the paper ledger (**ruled 2026-11-12**, section 5); 2 slots per method; **SIC codes mapped to the 11 GICS sectors**; paper switches to the IS picks in December (asked again then). **Ruled 2026-11-18:** paper tickets switch to the IS picks from the session after the pick commit |
 | D10 | Part 4 | Analog-window band plus the count rule; Check 3 = placement + activation; funding per method; **M2 extends to 2027-03-12 if short of the count, which is never lowered** |
 | D11 | Operations | Nightly run plus retries; token fail-closed; live-account alarm; token-monitor warning at 5.0 days (**applied 2026-11-10**). **Instructed by you, 2026-11-11:** an evening scan on provisional bars; an overnight recheck on final bars; an alert before the open if any ticket changed or disappeared; an alert if a nightly run misses its window; measure how often provisional bars flip a signal before relying on the evening scan. **Accepted by you, 2026-11-12:** the Mac precondition (section 4, step 3): "I'll keep it plugged in with the lid open on ticket nights." **Ruled 2026-11-12** ("yes on items 1 to 8 as recommended"): the night job and the watchdog (section 4, steps 1 and 2: the two runs with the recheck as the run of record, the ticket states with the CANCEL / REPLACE splits, the UNCONFIRMED default, rules e and f, the morning message with an alarm no earlier than 07:00, the token horizon), the `bars.py` truncated retry, the freeze including the night schedule, the sampler and installing its launchd job, and the flip report with what accepting it decides. **Your acceptance bar, 2026-11-12:** "a method gets evening tickets only if it had zero flips on every sampled night, in either direction (a ticket changed, disappeared, or appeared only on final bars). Judge M1 and M2 separately. Any flip keeps that method on recheck tickets." **Off-machine alert, 2026-11-12:** "not now", on the January list (section 6) |
 | D12 | Drill | **Instructed by you, 2026-11-11:** one drill ticket from that day's close, to rehearse the order mechanics in paperMoney: a liquid name, a buy stop-limit entry near the market, a 1st-triggers-OCO bracket with a sell limit target and a sell stop, all GTC, sized on the $1,500 basis; the 8-check on both screenshots, including that the bracket goes live correctly after the fill; counted in the 8-check record and kept out of the paper P&L ledger. **Instructed by you, 2026-11-12:** "Drill: not placed. Issue a fresh ticket from tonight's close." DRILL-2026-11-11-01 was never sent and is void (8-check record row seq 9); DRILL-2026-11-12-01, from the 2026-11-12 close, replaces it under the same instruction. **Ruled 2026-11-12** ("yes on items 1 to 8 as recommended"): the drill rules (the construction T = max(max(close, AH last) + max(0.10 ATR, $0.05), AH ask + $0.01) rounded up; end lines; out of the paper book and the forward log; later drills count only if you say so when asking; items 3 and 7 provisional until the golden probe; numbering; interim scoring) and the 8-check changes (item 5's STD on the sell stop, item 8's expected set, the after-fill re-read for every placement, the activation additions, placed or not placed, simulator artifacts as incidents, two records). "DRILL-2026-11-12-01 counts both ways" in Check 3 |

@@ -1,6 +1,7 @@
 """Phase 2 parameters -- every number in specs/phase2_spec.md, in one place.
 
-STATUS: NOT FROZEN (spec 3.7 step 1, build step B2). Every value is set. The
+STATUS: FROZEN at B2 (spec 3.7 step 1; the owner's ruling of 2026-11-18): the freeze record is
+specs/phase2_freeze.json, and one logged re-freeze is planned at the end of B4. Every value is set. The
 night-schedule and drill fields were ruled by the owner on 2026-11-12, so
 PENDING_RULING is empty and unset() reports nothing; it stays as the mechanism
 for any later proposal. The schedule's times (spec 4) are operational: they

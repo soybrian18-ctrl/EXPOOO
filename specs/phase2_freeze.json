@@ -1,0 +1,13 @@
+[
+  {
+    "label": "B2",
+    "ruled": "2026-11-18",
+    "reason": "B2 freeze: spec, params and the full code tree, before any IS number; the owner's ruling 'All as recommended' (2026-11-18). One logged re-freeze is planned at the end of B4 (NYSE calendar + B4 code).",
+    "written": "2026-11-18T18:20:14-05:00",
+    "spec_sha256": "52aa5ce3f5b1eb29eb074117d5675cff05fdbf98fa5c6a9f080daa1b5574ad5b",
+    "params_file_sha256": "4e773f6e83abdeafe5ec088f41c04f3e85749459ba467a5a10e0414fb8afcd6d",
+    "params_hash": "6732a21144af6178",
+    "code_tree_sha256": "bbe931adb87f58f34f19cc2e509053c388a4ccfdb3b168434d6a0fada4a9d08f",
+    "code_tree_files": 62
+  }
+]
